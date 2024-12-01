@@ -7,36 +7,33 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 
-	ucJoin "tgBotCompetition/usecase/member/join"
-	ucLeft "tgBotCompetition/usecase/member/left"
+	"tgBotCompetition/model"
+	tgModel "tgBotCompetition/tg/model"
+	ucParticipationChanged "tgBotCompetition/usecase/member/participation/changed"
 )
 
-const (
-	left          = "left"
-	kicked        = "kicked"
-	member        = "member"
-	restricted    = "restricted"
-	administrator = "administrator"
-	creator       = "creator"
-)
+var isMemberStatus = []int{
+	model.MemberStatusMember,
+	model.MemberStatusRestricted,
+	model.MemberStatusAdministrator,
+	model.MemberStatusCreator,
+}
 
-const (
-	Unknown = iota
-	IsJoinAction
-	IsLeaveAction
-)
+var isOutStatus = []int{
+	model.MemberStatusLeft,
+	model.MemberStatusKicked,
+}
 
-var isMemberStatus = []string{member, restricted, administrator, creator}
-var isOutStatus = []string{left, kicked}
-
-func defineAction(old, new string) int {
+func defineParticipationType(old, new string) int {
+	oldStatus := model.MemberStatusID[old]
+	newStatus := model.MemberStatusID[new]
 	switch {
-	case slices.Contains(isOutStatus, old) && slices.Contains(isMemberStatus, new):
-		return IsJoinAction
-	case slices.Contains(isMemberStatus, old) && slices.Contains(isOutStatus, new):
-		return IsLeaveAction
+	case slices.Contains(isOutStatus, oldStatus) && slices.Contains(isMemberStatus, newStatus):
+		return ucParticipationChanged.TypeJoin
+	case slices.Contains(isMemberStatus, oldStatus) && slices.Contains(isOutStatus, newStatus):
+		return ucParticipationChanged.TypeLeave
 	default:
-		return Unknown
+		return 0
 	}
 }
 
@@ -45,12 +42,27 @@ func (c *Controller) newChatMember(b *gotgbot.Bot, ctx *ext.Context) error {
 	newStatus := ctx.ChatMember.NewChatMember.GetStatus()
 	log.Println(oldStatus, "->", newStatus)
 
-	switch defineAction(oldStatus, newStatus) {
-	case IsJoinAction:
-		return (&ucJoin.Params{}).Run()
-	case IsLeaveAction:
-		return (&ucLeft.Params{}).Run()
-	default:
+	participationType := defineParticipationType(oldStatus, newStatus)
+	if participationType == 0 {
 		return nil
 	}
+	initiator := ctx.ChatMember.From
+	participant := ctx.ChatMember.NewChatMember.GetUser()
+	viaLink := ctx.ChatMember.InviteLink != nil ||
+		ctx.ChatMember.IsJoinRequest() ||
+		ctx.ChatMember.ViaChatFolderInviteLink
+
+	err := (&ucParticipationChanged.Params{
+		DB:                c.DB,
+		ChatID:            int(ctx.ChatMember.Chat.Id),
+		ParticipationType: participationType,
+		Participant:       tgModel.UserDomain(participant),
+		Initiator:         tgModel.UserDomain(initiator),
+		ViaLink:           viaLink,
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

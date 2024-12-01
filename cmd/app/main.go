@@ -7,6 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
+
 	"tgBotCompetition/tg"
 )
 
@@ -30,7 +33,12 @@ func main() {
 		cancel() // Отменяем контекст
 	}()
 
-	if err := tg.Run(ctx, token); err != nil {
+	db, err := sqlx.Connect("sqlite3", "file:main.db?cache=shared")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if err := tg.Run(ctx, token, db); err != nil {
 		log.Fatal(err)
 	}
 

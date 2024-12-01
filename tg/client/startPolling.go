@@ -9,7 +9,7 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 )
 
-func startPolling(updater *ext.Updater, bot *gotgbot.Bot) error {
+func StartPolling(updater *ext.Updater, bot *gotgbot.Bot) error {
 	err := updater.StartPolling(bot, &ext.PollingOpts{
 		DropPendingUpdates: true,
 		GetUpdatesOpts: &gotgbot.GetUpdatesOpts{

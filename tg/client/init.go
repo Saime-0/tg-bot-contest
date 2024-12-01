@@ -28,7 +28,7 @@ func Run(token string, regHand registerHandlers) (_ *Client, err error) {
 
 	client.Updater = ext.NewUpdater(client.Dispatcher, nil)
 
-	if err = startPolling(client.Updater, client.Bot); err != nil {
+	if err = StartPolling(client.Updater, client.Bot); err != nil {
 		return nil, err
 	}
 
