@@ -14,3 +14,11 @@ func UserDomain(tgUser gotgbot.User) model.User {
 		IsBot:     tgUser.IsBot,
 	}
 }
+
+func ChatDomain(tgChat gotgbot.Chat) model.Chat {
+	return model.Chat{
+		ID:       int(tgChat.Id),
+		Title:    tgChat.FirstName,
+		Username: tgChat.Username,
+	}
+}

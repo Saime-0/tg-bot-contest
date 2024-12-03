@@ -57,6 +57,7 @@ func MemberStatusName(memberID int) string {
 }
 
 type Member struct {
+	ID        int  `json:"id"`
 	UserID    int  `json:"user_id"`
 	ChatID    int  `json:"chat_id"`
 	Status    uint `json:"status"`
@@ -77,4 +78,16 @@ type Competition struct {
 	Keyword   string     `json:"keyword" db:"keyword"`
 	CreatedAt time.Time  `json:"created_at" db:"created_at"`
 	EndedAt   *time.Time `json:"ended_at" db:"ended_at"`
+}
+
+var ParticipantStatus = []int{
+	MemberStatusMember,
+	MemberStatusRestricted,
+	MemberStatusAdministrator,
+	MemberStatusCreator,
+}
+
+var AlienStatus = []int{
+	MemberStatusLeft,
+	MemberStatusKicked,
 }

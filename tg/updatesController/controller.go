@@ -11,8 +11,10 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"tgBotCompetition/l10n"
-	"tgBotCompetition/usecase/chats/take"
+	tgModel "tgBotCompetition/tg/model"
+	"tgBotCompetition/usecase/chat/take"
 	compCreate "tgBotCompetition/usecase/competitions/create"
+	messageCreated "tgBotCompetition/usecase/message/created"
 )
 
 type Controller struct {
@@ -20,6 +22,7 @@ type Controller struct {
 }
 
 func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
+	dispatcher.AddHandler(handlers.NewMessage(nil, c.newMessage))
 	dispatcher.AddHandler(handlers.NewChatMember(nil, c.newChatMember))
 	dispatcher.AddHandler(handlers.NewCommand("competitionConfigRun", c.competitionConfigRun))
 	//dispatcher.AddHandler(handlers.NewCommand("competitionStop", c.competitionStop))
@@ -120,4 +123,30 @@ func (c *Controller) cmdStart(b *gotgbot.Bot, ctx *ext.Context) error {
 	)
 
 	return err
+}
+
+func (c *Controller) newMessage(b *gotgbot.Bot, ctx *ext.Context) error {
+	msg := ctx.Message
+	if (msg.Chat.Type != gotgbot.ChatTypeSupergroup && msg.Chat.Type != gotgbot.ChatTypeGroup) ||
+		!msg.GetSender().IsUser() ||
+		msg.From == nil ||
+		msg.GetText() == "" {
+		return nil
+	}
+	var topicID int
+	if msg.IsTopicMessage {
+		topicID = int(msg.MessageThreadId)
+	}
+
+	if err := (&messageCreated.Params{
+		DB:      c.DB,
+		Chat:    tgModel.ChatDomain(msg.Chat),
+		User:    tgModel.UserDomain(*msg.From),
+		Text:    msg.GetText(),
+		TopicID: topicID,
+	}).Run(); err != nil {
+		return err
+	}
+
+	return nil
 }
