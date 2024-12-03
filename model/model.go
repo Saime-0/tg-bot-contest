@@ -10,51 +10,9 @@ type User struct {
 }
 
 const (
-	MemberStatusLeft          = 1
-	MemberStatusKicked        = 2
-	MemberStatusMember        = 3
-	MemberStatusRestricted    = 4
-	MemberStatusAdministrator = 5
-	MemberStatusCreator       = 6
+	MemberStatusJoin  uint = 1
+	MemberStatusLeave uint = 2
 )
-
-var MemberStatusNameMap = map[uint]string{
-	MemberStatusLeft:          "left",
-	MemberStatusKicked:        "kicked",
-	MemberStatusMember:        "member",
-	MemberStatusRestricted:    "restricted",
-	MemberStatusAdministrator: "administrator",
-	MemberStatusCreator:       "creator",
-}
-
-var MemberStatusID = map[string]uint{
-	"left":          MemberStatusLeft,
-	"kicked":        MemberStatusKicked,
-	"member":        MemberStatusMember,
-	"restricted":    MemberStatusRestricted,
-	"administrator": MemberStatusAdministrator,
-	"creator":       MemberStatusCreator,
-}
-
-func MemberStatusName(memberID int) string {
-	switch memberID {
-	case MemberStatusLeft:
-		return "left"
-	case MemberStatusKicked:
-		return "kicked"
-	case MemberStatusMember:
-		return "member"
-	case MemberStatusRestricted:
-		return "restricted"
-	case MemberStatusAdministrator:
-		return "administrator"
-	case MemberStatusCreator:
-		return "creator"
-	default:
-		return "unknown"
-	}
-
-}
 
 type Member struct {
 	ID        int  `json:"id"`
@@ -78,16 +36,4 @@ type Competition struct {
 	Keyword   string     `json:"keyword" db:"keyword"`
 	CreatedAt time.Time  `json:"created_at" db:"created_at"`
 	EndedAt   *time.Time `json:"ended_at" db:"ended_at"`
-}
-
-var ParticipantStatus = []uint{
-	MemberStatusMember,
-	MemberStatusRestricted,
-	MemberStatusAdministrator,
-	MemberStatusCreator,
-}
-
-var AlienStatus = []uint{
-	MemberStatusLeft,
-	MemberStatusKicked,
 }

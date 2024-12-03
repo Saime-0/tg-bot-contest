@@ -14,11 +14,11 @@ import (
 type Params struct {
 	DB *sqlx.DB
 
-	Chat              model.Chat
-	ParticipationType int
-	Participant       model.User
-	Initiator         model.User
-	ViaLink           bool
+	Chat         model.Chat
+	MemberStatus uint
+	Participant  model.User
+	Initiator    model.User
+	ViaLink      bool
 }
 
 const (
@@ -43,60 +43,33 @@ func (p *Params) Run() error {
 		SET status=?
 		WHERE chat_id=? and user_id=?
 		RETURNING *
-	`, p.ParticipationType, p.Chat.ID, p.Participant.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+	`, p.MemberStatus, p.Chat.ID, p.Participant.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 
-	switch p.ParticipationType {
-	case TypeJoin:
-		return p.onJoin(member)
-	case TypeLeave:
-		return p.onLeave(member)
-	default:
-		return nil
-	}
-}
-
-func (p *Params) onJoin(member model.Member) error {
-	ticketCreatePass := p.ViaLink ||
-		p.Initiator.IsBot ||
-		p.Participant.IsBot ||
-		p.Initiator.ID == p.Participant.ID
-
-	if member.ID != 0 {
-		return nil
-	}
-
-	member = model.Member{
-		UserID:    p.Participant.ID,
-		ChatID:    p.Chat.ID,
-		Status:    TypeJoin,
-		InviterID: 0,
-	}
-	if !ticketCreatePass {
-		member.InviterID = p.Initiator.ID
-	}
-
-	if _, err := p.DB.NamedExec(`
-			insert into members(chat_id,user_id,status,inviter_id)
-			values(:chat_id,:user_id,:status,:inviter_id)
-		`, member); err != nil {
-		return err
+	if member.ID == 0 {
+		return p.saveMember(member)
 	}
 
 	return nil
 }
 
-func (p *Params) onLeave(member model.Member) error {
-	if member.ID != 0 {
-		return nil
-	}
-
+func (p *Params) saveMember(member model.Member) error {
 	member = model.Member{
 		UserID:    p.Participant.ID,
 		ChatID:    p.Chat.ID,
-		Status:    TypeLeave,
+		Status:    p.MemberStatus,
 		InviterID: 0,
+	}
+
+	ignoreOnTicketCounting := p.MemberStatus == model.MemberStatusLeave ||
+		p.ViaLink ||
+		p.Initiator.IsBot ||
+		p.Participant.IsBot ||
+		p.Initiator.ID == p.Participant.ID
+
+	if !ignoreOnTicketCounting {
+		member.InviterID = p.Initiator.ID
 	}
 
 	if _, err := p.DB.NamedExec(`
