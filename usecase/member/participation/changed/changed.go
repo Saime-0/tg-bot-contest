@@ -21,11 +21,6 @@ type Params struct {
 	ViaLink      bool
 }
 
-const (
-	TypeJoin  = 1
-	TypeLeave = 2
-)
-
 func (p *Params) Run() error {
 	if err := (&chatUpdate.Params{DB: p.DB, Chat: p.Chat}).Run(); err != nil {
 		return err
