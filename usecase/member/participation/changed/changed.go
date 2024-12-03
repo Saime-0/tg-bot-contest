@@ -43,20 +43,20 @@ func (p *Params) Run() error {
 	}
 
 	if member.ID == 0 {
-		return p.saveMember(member)
+		return p.saveMember()
 	}
 
 	return nil
 }
 
-func (p *Params) saveMember(member model.Member) error {
+func (p *Params) saveMember() error {
 	ignoreInTicketCounting := p.MemberStatus == model.MemberStatusLeave ||
 		p.ViaLink ||
 		p.Initiator.IsBot ||
 		p.Participant.IsBot ||
 		p.Initiator.ID == p.Participant.ID
 
-	member = model.Member{
+	member := model.Member{
 		UserID:                 p.Participant.ID,
 		ChatID:                 p.Chat.ID,
 		Status:                 p.MemberStatus,
