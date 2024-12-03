@@ -6,6 +6,7 @@ CREATE TABLE members
     status INTEGER NOT NULL DEFAULT 0,
     inviter_id INTEGER NOT NULL DEFAULT 0,
     ignore_in_ticket_counting INTEGER NOT NULL,
+    in_ticket_id INTEGER NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -31,8 +32,7 @@ CREATE TABLE tickets(
     number INTEGER PRIMARY KEY,
     user_id INTEGER NOT NULL,
     competition_id INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE competitions(
@@ -41,6 +41,7 @@ CREATE TABLE competitions(
     chat_id INTEGER NOT NULL,
     topic_id INTEGER NOT NULL DEFAULT 0,
     keyword TEXT NOT NULL,
+    multiplicity INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ended_at TIMESTAMP NULL
 );

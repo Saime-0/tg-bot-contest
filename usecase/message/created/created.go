@@ -9,7 +9,7 @@ import (
 
 	"tgBotCompetition/model"
 	chatUpdate "tgBotCompetition/usecase/chat/update"
-	ticketRecalc "tgBotCompetition/usecase/ticket/recalc"
+	ticketCounting "tgBotCompetition/usecase/ticket/counting"
 	userUpdate "tgBotCompetition/usecase/user/update"
 )
 
@@ -55,7 +55,7 @@ func (p Params) Run() error {
 		return nil
 	}
 
-	if err = (&ticketRecalc.Params{
+	if err = (&ticketCounting.Params{
 		DB:   p.DB,
 		Chat: p.Chat,
 		User: p.User,

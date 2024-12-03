@@ -8,4 +8,5 @@ const (
 	CfgKeyword      = "ключевое слово"
 	CfgChatUsername = "чат"
 	CfgTopic        = "топик"
+	DefaultKeyword  = "готов"
 )

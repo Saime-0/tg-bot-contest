@@ -30,11 +30,18 @@ type Chat struct {
 }
 
 type Competition struct {
-	ID        int        `json:"id" db:"id"`
-	CreatorID int        `json:"creator_id" db:"creator_id"`
-	ChatID    int        `json:"chat_id" db:"chat_id"`
-	TopicID   int        `json:"topic_id" db:"topic_id"`
-	Keyword   string     `json:"keyword" db:"keyword"`
-	CreatedAt time.Time  `json:"created_at" db:"created_at"`
-	EndedAt   *time.Time `json:"ended_at" db:"ended_at"`
+	ID           int        `json:"id" db:"id"`
+	CreatorID    int        `json:"creator_id" db:"creator_id"`
+	ChatID       int        `json:"chat_id" db:"chat_id"`
+	TopicID      int        `json:"topic_id" db:"topic_id"`
+	Keyword      string     `json:"keyword" db:"keyword"`
+	Multiplicity int        `json:"multiplicity" db:"multiplicity"`
+	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
+	EndedAt      *time.Time `json:"ended_at" db:"ended_at"`
+}
+
+type Ticket struct {
+	Number        int `json:"number" db:"number"`
+	UserID        int `json:"user_id" db:"user_id"`
+	CompetitionID int `json:"competition_id" db:"competition_id"`
 }
