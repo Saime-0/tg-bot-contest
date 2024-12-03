@@ -15,11 +15,12 @@ const (
 )
 
 type Member struct {
-	ID        int  `json:"id"`
-	UserID    int  `json:"user_id"`
-	ChatID    int  `json:"chat_id"`
-	Status    uint `json:"status"`
-	InviterID int  `json:"inviter_id"`
+	ID                     int  `json:"id" db:"id"`
+	UserID                 int  `json:"user_id" db:"user_id"`
+	ChatID                 int  `json:"chat_id" db:"chat_id"`
+	Status                 uint `json:"status" db:"status"`
+	InviterID              int  `json:"inviter_id" db:"inviter_id"`
+	IgnoreInTicketCounting bool `json:"ignore_in_ticket_counting" db:"ignore_in_ticket_counting"`
 }
 
 type Chat struct {

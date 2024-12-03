@@ -50,26 +50,27 @@ func (p *Params) Run() error {
 }
 
 func (p *Params) saveMember(member model.Member) error {
-	member = model.Member{
-		UserID:    p.Participant.ID,
-		ChatID:    p.Chat.ID,
-		Status:    p.MemberStatus,
-		InviterID: 0,
-	}
-
-	ignoreOnTicketCounting := p.MemberStatus == model.MemberStatusLeave ||
+	ignoreInTicketCounting := p.MemberStatus == model.MemberStatusLeave ||
 		p.ViaLink ||
 		p.Initiator.IsBot ||
 		p.Participant.IsBot ||
 		p.Initiator.ID == p.Participant.ID
 
-	if !ignoreOnTicketCounting {
+	member = model.Member{
+		UserID:                 p.Participant.ID,
+		ChatID:                 p.Chat.ID,
+		Status:                 p.MemberStatus,
+		InviterID:              0,
+		IgnoreInTicketCounting: ignoreInTicketCounting,
+	}
+
+	if p.MemberStatus == model.MemberStatusJoin {
 		member.InviterID = p.Initiator.ID
 	}
 
 	if _, err := p.DB.NamedExec(`
-			insert into members(chat_id,user_id,status,inviter_id)
-			values(:chat_id,:user_id,:status,:inviter_id)
+			insert into members(chat_id,user_id,status,inviter_id,ignore_in_ticket_counting)
+			values(:chat_id,:user_id,:status,:inviter_id,:ignore_in_ticket_counting)
 		`, member); err != nil {
 		return err
 	}
