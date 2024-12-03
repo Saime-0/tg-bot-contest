@@ -18,7 +18,7 @@ const (
 	MemberStatusCreator       = 6
 )
 
-var MemberStatusNameMap = map[int]string{
+var MemberStatusNameMap = map[uint]string{
 	MemberStatusLeft:          "left",
 	MemberStatusKicked:        "kicked",
 	MemberStatusMember:        "member",
@@ -27,7 +27,7 @@ var MemberStatusNameMap = map[int]string{
 	MemberStatusCreator:       "creator",
 }
 
-var MemberStatusID = map[string]int{
+var MemberStatusID = map[string]uint{
 	"left":          MemberStatusLeft,
 	"kicked":        MemberStatusKicked,
 	"member":        MemberStatusMember,
@@ -80,14 +80,14 @@ type Competition struct {
 	EndedAt   *time.Time `json:"ended_at" db:"ended_at"`
 }
 
-var ParticipantStatus = []int{
+var ParticipantStatus = []uint{
 	MemberStatusMember,
 	MemberStatusRestricted,
 	MemberStatusAdministrator,
 	MemberStatusCreator,
 }
 
-var AlienStatus = []int{
+var AlienStatus = []uint{
 	MemberStatusLeft,
 	MemberStatusKicked,
 }

@@ -3,7 +3,6 @@ package changed
 import (
 	"database/sql"
 	"errors"
-	"slices"
 
 	"github.com/jmoiron/sqlx"
 
@@ -38,23 +37,73 @@ func (p *Params) Run() error {
 		return err
 	}
 
-	if p.ViaLink ||
-		p.Initiator.IsBot ||
-		p.Participant.IsBot ||
-		p.Initiator.ID == p.Participant.ID {
-		return nil
-	}
-
 	var member model.Member
 	if err := p.DB.Get(&member, `
-		select * from members
-		where chat_id=? and user_id=?
-	`, p.Chat.ID, p.Participant.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		UPDATE members
+		SET status=?
+		WHERE chat_id=? and user_id=?
+		RETURNING *
+	`, p.ParticipationType, p.Chat.ID, p.Participant.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 
-	if member.ID != 0 && slices.Contains()member.Status ==  {
+	switch p.ParticipationType {
+	case TypeJoin:
+		return p.onJoin(member)
+	case TypeLeave:
+		return p.onLeave(member)
+	default:
 		return nil
+	}
+}
+
+func (p *Params) onJoin(member model.Member) error {
+	ticketCreatePass := p.ViaLink ||
+		p.Initiator.IsBot ||
+		p.Participant.IsBot ||
+		p.Initiator.ID == p.Participant.ID
+
+	if member.ID != 0 {
+		return nil
+	}
+
+	member = model.Member{
+		UserID:    p.Participant.ID,
+		ChatID:    p.Chat.ID,
+		Status:    TypeJoin,
+		InviterID: 0,
+	}
+	if !ticketCreatePass {
+		member.InviterID = p.Initiator.ID
+	}
+
+	if _, err := p.DB.NamedExec(`
+			insert into members(chat_id,user_id,status,inviter_id)
+			values(:chat_id,:user_id,:status,:inviter_id)
+		`, member); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Params) onLeave(member model.Member) error {
+	if member.ID != 0 {
+		return nil
+	}
+
+	member = model.Member{
+		UserID:    p.Participant.ID,
+		ChatID:    p.Chat.ID,
+		Status:    TypeLeave,
+		InviterID: 0,
+	}
+
+	if _, err := p.DB.NamedExec(`
+			insert into members(chat_id,user_id,status,inviter_id)
+			values(:chat_id,:user_id,:status,:inviter_id)
+		`, member); err != nil {
+		return err
 	}
 
 	return nil
