@@ -12,13 +12,16 @@ import (
 )
 
 func Run(ctx context.Context, token string, db *sqlx.DB) (err error) {
-	client := &tgClient.Client{}
+	updatesController := &tgUpdatesController.Controller{
+		DB: db,
+	}
 
+	client := &tgClient.Client{}
 	if client.Bot, err = tgClient.NewBot(token); err != nil {
 		return fmt.Errorf("can't create bot: %w", err)
 	}
-	updatesController := &tgUpdatesController.Controller{
-		DB: db,
+	if err = updatesController.SetMyCommands(client.Bot); err != nil {
+		return fmt.Errorf("can't set commands: %w", err)
 	}
 
 	client.Dispatcher = tgClient.NewDispatcher()

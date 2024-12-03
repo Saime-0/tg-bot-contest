@@ -9,6 +9,7 @@ import (
 
 	"tgBotCompetition/model"
 	tgModel "tgBotCompetition/tg/model"
+	chatAdded "tgBotCompetition/usecase/chats/added"
 	ucParticipationChanged "tgBotCompetition/usecase/member/participation/changed"
 )
 
@@ -62,6 +63,17 @@ func (c *Controller) newChatMember(b *gotgbot.Bot, ctx *ext.Context) error {
 	}).Run()
 	if err != nil {
 		return err
+	}
+
+	if err = (&chatAdded.Params{
+		DB: c.DB,
+		Chat: model.Chat{
+			ID:       int(ctx.ChatMember.Chat.Id),
+			Title:    ctx.ChatMember.Chat.Title,
+			Username: ctx.ChatMember.Chat.Username,
+		},
+	}).Run(); err != nil {
+		log.Println("ERROR " + err.Error())
 	}
 
 	return nil

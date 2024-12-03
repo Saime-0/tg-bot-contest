@@ -13,10 +13,10 @@ func StartPolling(updater *ext.Updater, bot *gotgbot.Bot) error {
 	err := updater.StartPolling(bot, &ext.PollingOpts{
 		DropPendingUpdates: true,
 		GetUpdatesOpts: &gotgbot.GetUpdatesOpts{
-			AllowedUpdates: []string{
-				"chat_member",
-				"message",
-			},
+			//AllowedUpdates: []string{
+			//	"chat_member",
+			//	"message",
+			//},
 			Timeout: 5,
 			RequestOpts: &gotgbot.RequestOpts{
 				Timeout: time.Second * 10,
