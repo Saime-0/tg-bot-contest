@@ -14,8 +14,13 @@ type Params struct {
 
 func (p *Params) Run() error {
 	_, err := p.DB.NamedExec(`
-		insert or replace into users (id,is_bot,first_name,username)
+		insert into users (id,is_bot,first_name,username)
 		values (:id,:is_bot,:first_name,:username)
+		on conflict(id) do update set
+			is_bot = excluded.is_bot,
+			first_name = excluded.first_name,
+			username = excluded.username,
+			updated_at = current_timestamp
     `, p.User)
 
 	return err
