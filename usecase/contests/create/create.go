@@ -1,12 +1,11 @@
 package create
 
 import (
-	"errors"
-
 	"github.com/jmoiron/sqlx"
 
 	"tgBotContest/l10n"
 	"tgBotContest/model"
+	"tgBotContest/ue"
 )
 
 type Params struct {
@@ -24,10 +23,6 @@ const (
 	DefaultKeyword      = l10n.DefaultKeyword
 )
 
-var (
-	ErrContestAlreadyExists = errors.New("конкурс уже запущен")
-)
-
 func (p *Params) Run() error {
 	var exists bool
 	if err := p.DB.Get(&exists, `
@@ -40,7 +35,7 @@ func (p *Params) Run() error {
 		return err
 	}
 	if exists {
-		return ErrContestAlreadyExists
+		return ue.New(l10n.ContestCreatePreviousNotOverYet)
 	}
 
 	if p.Multiplicity <= 0 {

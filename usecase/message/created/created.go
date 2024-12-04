@@ -23,8 +23,9 @@ type Params struct {
 }
 
 type Out struct {
-	CreatedTickets []model.Ticket
-	Comp           model.Contest
+	CreatedTickets        []model.Ticket
+	Comp                  model.Contest
+	CalculationWasStarted bool
 }
 
 func (p Params) Run() (Out, error) {
@@ -70,7 +71,8 @@ func (p Params) Run() (Out, error) {
 	}
 
 	return Out{
-		CreatedTickets: ticketCountingOut.CreatedTickets,
-		Comp:           comp,
+		CreatedTickets:        ticketCountingOut.CreatedTickets,
+		Comp:                  comp,
+		CalculationWasStarted: true,
 	}, nil
 }
