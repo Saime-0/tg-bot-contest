@@ -23,3 +23,7 @@ func (p *Params) Run() error {
 
 	return err
 }
+
+func Run(db *sqlx.DB, chat model.Chat) error {
+	return (&Params{DB: db, Chat: chat}).Run()
+}

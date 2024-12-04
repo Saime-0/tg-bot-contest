@@ -25,3 +25,7 @@ func (p *Params) Run() error {
 
 	return err
 }
+
+func Run(db *sqlx.DB, initiator model.User) error {
+	return (&Params{DB: db, User: initiator}).Run()
+}

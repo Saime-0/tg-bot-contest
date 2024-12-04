@@ -19,13 +19,13 @@ type Params struct {
 }
 
 func (p *Params) Run() error {
-	if err := (&chatUpdate.Params{DB: p.DB, Chat: p.Chat}).Run(); err != nil {
+	if err := chatUpdate.Run(p.DB, p.Chat); err != nil {
 		return err
 	}
-	if err := (&userUpdate.Params{DB: p.DB, User: p.Participant}).Run(); err != nil {
+	if err := userUpdate.Run(p.DB, p.Participant); err != nil {
 		return err
 	}
-	if err := (&userUpdate.Params{DB: p.DB, User: p.Initiator}).Run(); err != nil {
+	if err := userUpdate.Run(p.DB, p.Initiator); err != nil {
 		return err
 	}
 
