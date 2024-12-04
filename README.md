@@ -1,4 +1,4 @@
-# tg-bot-competition
+# tg-bot-contest
 
 Запуск конкурса
 

@@ -35,7 +35,7 @@ type Chat struct {
 	CreatedAt time.Time `db:"created_at"`
 }
 
-type Competition struct {
+type Contest struct {
 	ID           int        `db:"id"`
 	CreatorID    int        `db:"creator_id"`
 	ChatID       int        `db:"chat_id"`
@@ -47,7 +47,7 @@ type Competition struct {
 }
 
 type Ticket struct {
-	Number        int `json:"number" db:"number"`
-	UserID        int `json:"user_id" db:"user_id"`
-	CompetitionID int `json:"competition_id" db:"competition_id"`
+	Number    int `json:"number" db:"number"`
+	UserID    int `json:"user_id" db:"user_id"`
+	ContestID int `json:"contest_id" db:"contest_id"`
 }

@@ -3,9 +3,9 @@ package statusUpdate
 import (
 	"github.com/jmoiron/sqlx"
 
-	"tgBotCompetition/model"
-	chatUpdate "tgBotCompetition/usecase/chat/update"
-	userUpdate "tgBotCompetition/usecase/user/update"
+	"tgBotContest/model"
+	chatUpdate "tgBotContest/usecase/chat/update"
+	userUpdate "tgBotContest/usecase/user/update"
 )
 
 type Params struct {

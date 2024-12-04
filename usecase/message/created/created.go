@@ -7,10 +7,10 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
-	"tgBotCompetition/model"
-	chatUpdate "tgBotCompetition/usecase/chat/update"
-	ticketCounting "tgBotCompetition/usecase/ticket/counting"
-	userUpdate "tgBotCompetition/usecase/user/update"
+	"tgBotContest/model"
+	chatUpdate "tgBotContest/usecase/chat/update"
+	ticketCounting "tgBotContest/usecase/ticket/counting"
+	userUpdate "tgBotContest/usecase/user/update"
 )
 
 type Params struct {
@@ -24,7 +24,7 @@ type Params struct {
 
 type Out struct {
 	CreatedTickets []model.Ticket
-	Comp           model.Competition
+	Comp           model.Contest
 }
 
 func (p Params) Run() (Out, error) {
@@ -39,9 +39,9 @@ func (p Params) Run() (Out, error) {
 		return Out{}, err
 	}
 
-	var comp model.Competition
+	var comp model.Contest
 	err := p.DB.Get(&comp, `
-		select * from competitions 
+		select * from contests 
 		where chat_id=? 
 			and topic_id=?
 			and ended_at is null

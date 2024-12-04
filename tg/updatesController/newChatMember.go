@@ -7,9 +7,9 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 
-	"tgBotCompetition/model"
-	tgModel "tgBotCompetition/tg/model"
-	memberStatusUpdate "tgBotCompetition/usecase/member/statusUpdate"
+	"tgBotContest/model"
+	tgModel "tgBotContest/tg/model"
+	memberStatusUpdate "tgBotContest/usecase/member/statusUpdate"
 )
 
 func defineMemberStatus(old, new string) uint {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
-	"tgBotCompetition/l10n"
-	"tgBotCompetition/model"
+	"tgBotContest/l10n"
+	"tgBotContest/model"
 )
 
 type Params struct {
@@ -25,14 +25,14 @@ const (
 )
 
 var (
-	ErrCompetitionAlreadyExists = errors.New("конкурс уже запущен")
+	ErrContestAlreadyExists = errors.New("конкурс уже запущен")
 )
 
 func (p *Params) Run() error {
 	var exists bool
 	if err := p.DB.Get(&exists, `
 		select exists(
-		    select 1 from competitions 
+		    select 1 from contests 
 			where chat_id=? 
 			  and ended_at is null
 		)
@@ -40,7 +40,7 @@ func (p *Params) Run() error {
 		return err
 	}
 	if exists {
-		return ErrCompetitionAlreadyExists
+		return ErrContestAlreadyExists
 	}
 
 	if p.Multiplicity <= 0 {
@@ -51,9 +51,9 @@ func (p *Params) Run() error {
 	}
 
 	_, err := p.DB.NamedExec(`
-		insert into competitions (creator_id,chat_id,topic_id,keyword,multiplicity)
+		insert into contests (creator_id,chat_id,topic_id,keyword,multiplicity)
 		values (:creator_id,:chat_id,:topic_id,:keyword,:multiplicity)`,
-		model.Competition{
+		model.Contest{
 			CreatorID:    p.CreatorID,
 			ChatID:       p.ChatID,
 			TopicID:      p.TopicID,

@@ -3,8 +3,8 @@ package counting
 import (
 	"github.com/jmoiron/sqlx"
 
-	"tgBotCompetition/common"
-	"tgBotCompetition/model"
+	"tgBotContest/common"
+	"tgBotContest/model"
 )
 
 type Params struct {
@@ -12,7 +12,7 @@ type Params struct {
 
 	Chat model.Chat
 	User model.User
-	Comp model.Competition
+	Comp model.Contest
 }
 
 type Out struct {
@@ -46,7 +46,7 @@ func (p Params) Run() (Out, error) {
 	var lastTicketNumber int
 	if err := p.DB.Get(&lastTicketNumber, `
 		select ifnull(max(number),0) from tickets 
-		where competition_id=?
+		where contest_id=?
 	`, p.Comp.ID); err != nil {
 		return Out{}, err
 	}
@@ -54,13 +54,13 @@ func (p Params) Run() (Out, error) {
 	var out Out
 	for i := 0; i < len(chunkedMembers); i++ {
 		ticket := model.Ticket{
-			Number:        i + lastTicketNumber + 1,
-			UserID:        p.User.ID,
-			CompetitionID: p.Comp.ID,
+			Number:    i + lastTicketNumber + 1,
+			UserID:    p.User.ID,
+			ContestID: p.Comp.ID,
 		}
 		if _, err := p.DB.NamedExec(`
-			insert into tickets(number, user_id, competition_id)
-			values (:number, :user_id, :competition_id)
+			insert into tickets(number, user_id, contest_id)
+			values (:number, :user_id, :contest_id)
 		`, ticket); err != nil {
 			return Out{}, err
 		}

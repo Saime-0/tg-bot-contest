@@ -3,7 +3,7 @@ package take
 import (
 	"github.com/jmoiron/sqlx"
 
-	"tgBotCompetition/model"
+	"tgBotContest/model"
 )
 
 type Params struct {

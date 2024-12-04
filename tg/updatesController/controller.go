@@ -11,12 +11,12 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
 	"github.com/jmoiron/sqlx"
 
-	"tgBotCompetition/l10n"
-	tgModel "tgBotCompetition/tg/model"
-	"tgBotCompetition/usecase/chat/take"
-	compCreate "tgBotCompetition/usecase/competitions/create"
-	competitionStop "tgBotCompetition/usecase/competitions/stop"
-	messageCreated "tgBotCompetition/usecase/message/created"
+	"tgBotContest/l10n"
+	tgModel "tgBotContest/tg/model"
+	"tgBotContest/usecase/chat/take"
+	compCreate "tgBotContest/usecase/contests/create"
+	contestStop "tgBotContest/usecase/contests/stop"
+	messageCreated "tgBotContest/usecase/message/created"
 )
 
 type Controller struct {
@@ -25,15 +25,15 @@ type Controller struct {
 
 func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool {
-		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/competitionConfigRun")
-	}, c.competitionConfigRun))
+		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/contestConfigRun")
+	}, c.contestConfigRun))
 	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool {
-		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/competitionStop")
-	}, c.competitionStop))
+		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/contestStop")
+	}, c.contestStop))
 	dispatcher.AddHandler(handlers.NewMessage(nil, c.newMessage))
 	dispatcher.AddHandler(handlers.NewChatMember(nil, c.newChatMember))
-	//dispatcher.AddHandler(handlers.NewCommand("compr", c.competitionConfigRun))
-	//dispatcher.AddHandler(handlers.NewCommand("competitionStop", c.competitionStop))
+	//dispatcher.AddHandler(handlers.NewCommand("compr", c.contestConfigRun))
+	//dispatcher.AddHandler(handlers.NewCommand("contestStop", c.contestStop))
 
 	return nil
 }
@@ -51,7 +51,7 @@ func (c *Controller) SetMyCommands(b *gotgbot.Bot) error {
 	return nil
 }
 
-func (c *Controller) competitionConfigRun(b *gotgbot.Bot, ctx *ext.Context) error {
+func (c *Controller) contestConfigRun(b *gotgbot.Bot, ctx *ext.Context) error {
 	// Разобрать сообщение конфига на параметры
 	lines := strings.Split(ctx.Message.GetText(), "\n")
 	kv := make(map[string]string, len(lines))
@@ -91,7 +91,7 @@ func (c *Controller) competitionConfigRun(b *gotgbot.Bot, ctx *ext.Context) erro
 			}
 		}
 		if !allowed {
-			return errors.New("user is not allowed to create competition")
+			return errors.New("user is not allowed to create contest")
 		}
 	}
 
@@ -184,13 +184,13 @@ func (c *Controller) sendMessageAboutCreatedTickets(b *gotgbot.Bot, ctx *ext.Con
 	return nil
 }
 
-func (c *Controller) competitionStop(b *gotgbot.Bot, ctx *ext.Context) error {
+func (c *Controller) contestStop(b *gotgbot.Bot, ctx *ext.Context) error {
 	words := strings.Fields(ctx.Message.GetText())
 	if len(words) < 2 {
 		return nil // todo: send msg
 	}
 
-	if err := (&competitionStop.Params{
+	if err := (&contestStop.Params{
 		DB:           c.DB,
 		ChatUsername: strings.TrimPrefix(words[1], "@"),
 	}).Run(); err != nil {

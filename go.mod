@@ -1,4 +1,4 @@
-module tgBotCompetition
+module tgBotContest
 
 go 1.23.3
 

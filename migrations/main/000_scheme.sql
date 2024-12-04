@@ -31,11 +31,11 @@ CREATE TABLE chats(
 CREATE TABLE tickets(
     number INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
-    competition_id INTEGER NOT NULL,
+    contest_id INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE competitions(
+CREATE TABLE contests(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     creator_id INTEGER,
     chat_id INTEGER NOT NULL,

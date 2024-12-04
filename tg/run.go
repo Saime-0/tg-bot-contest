@@ -8,8 +8,8 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/jmoiron/sqlx"
 
-	tgClient "tgBotCompetition/tg/client"
-	tgUpdatesController "tgBotCompetition/tg/updatesController"
+	tgClient "tgBotContest/tg/client"
+	tgUpdatesController "tgBotContest/tg/updatesController"
 )
 
 func Run(ctx context.Context, token string, db *sqlx.DB) (err error) {
