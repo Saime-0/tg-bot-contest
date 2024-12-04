@@ -30,11 +30,13 @@ var (
 
 func (p *Params) Run() error {
 	var exists bool
-	if err := p.DB.Select(&exists, `
-		SELECT 1
-		FROM competitions 
-		WHERE chat_id = ?
-		  AND ended_at IS NOT NULL`); err != nil {
+	if err := p.DB.Get(&exists, `
+		select exists(
+		    select 1 from competitions 
+			where chat_id=? 
+			  and ended_at is null
+		)
+  	`, p.ChatID); err != nil {
 		return err
 	}
 	if exists {

@@ -1,9 +1,6 @@
 package changed
 
 import (
-	"database/sql"
-	"errors"
-
 	"github.com/jmoiron/sqlx"
 
 	"tgBotCompetition/model"
@@ -32,17 +29,13 @@ func (p *Params) Run() error {
 		return err
 	}
 
-	var member model.Member
-	if err := p.DB.Get(&member, `
+	if res, err := p.DB.Exec(`
 		UPDATE members
 		SET status=?
 		WHERE chat_id=? and user_id=?
-		RETURNING *
-	`, p.MemberStatus, p.Chat.ID, p.Participant.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+	`, p.MemberStatus, p.Chat.ID, p.Participant.ID); err != nil {
 		return err
-	}
-
-	if member.ID == 0 {
+	} else if affected, _ := res.RowsAffected(); affected == 0 {
 		return p.saveMember()
 	}
 

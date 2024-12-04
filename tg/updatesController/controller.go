@@ -22,9 +22,12 @@ type Controller struct {
 }
 
 func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
+	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/competitionConfigRun")
+	}, c.competitionConfigRun))
 	dispatcher.AddHandler(handlers.NewMessage(nil, c.newMessage))
 	dispatcher.AddHandler(handlers.NewChatMember(nil, c.newChatMember))
-	dispatcher.AddHandler(handlers.NewCommand("competitionConfigRun", c.competitionConfigRun))
+	//dispatcher.AddHandler(handlers.NewCommand("compr", c.competitionConfigRun))
 	//dispatcher.AddHandler(handlers.NewCommand("competitionStop", c.competitionStop))
 
 	return nil
@@ -44,7 +47,6 @@ func (c *Controller) SetMyCommands(b *gotgbot.Bot) error {
 }
 
 func (c *Controller) competitionConfigRun(b *gotgbot.Bot, ctx *ext.Context) error {
-
 	// Разобрать сообщение конфига на параметры
 	lines := strings.Split(ctx.Message.GetText(), "\n")
 	kv := make(map[string]string, len(lines))
@@ -56,7 +58,11 @@ func (c *Controller) competitionConfigRun(b *gotgbot.Bot, ctx *ext.Context) erro
 	}
 
 	// Параметры для создания конкурса
-	var params compCreate.Params
+	params := compCreate.Params{
+		DB:        c.DB,
+		Keyword:   kv[l10n.CfgKeyword],
+		CreatorID: int(ctx.EffectiveSender.Id()),
+	}
 
 	// Найти чат
 	if chat, err := (&take.Params{
@@ -84,9 +90,6 @@ func (c *Controller) competitionConfigRun(b *gotgbot.Bot, ctx *ext.Context) erro
 		}
 	}
 
-	// Заполнить остальные параметры
-	params.Keyword = kv[l10n.CfgKeyword]
-
 	if multiplicity, err := strconv.ParseInt(kv[l10n.CfgMultiplicity], 10, 64); err != nil {
 		return err
 	} else {
@@ -97,6 +100,10 @@ func (c *Controller) competitionConfigRun(b *gotgbot.Bot, ctx *ext.Context) erro
 		return err
 	} else {
 		params.TopicID = int(topicID)
+	}
+
+	if err := params.Run(); err != nil {
+		return err
 	}
 
 	return nil

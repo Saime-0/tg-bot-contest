@@ -3,10 +3,10 @@ package model
 import "time"
 
 type User struct {
-	ID        int    `json:"id"`
-	FirstName string `json:"first_name"`
-	Username  string `json:"username"`
-	IsBot     bool   `json:"is_bot"`
+	ID        int    `db:"id"`
+	FirstName string `db:"first_name"`
+	Username  string `db:"username"`
+	IsBot     bool   `db:"is_bot"`
 }
 
 const (
@@ -15,29 +15,35 @@ const (
 )
 
 type Member struct {
-	ID                     int  `json:"id" db:"id"`
-	UserID                 int  `json:"user_id" db:"user_id"`
-	ChatID                 int  `json:"chat_id" db:"chat_id"`
-	Status                 uint `json:"status" db:"status"`
-	InviterID              int  `json:"inviter_id" db:"inviter_id"`
-	IgnoreInTicketCounting bool `json:"ignore_in_ticket_counting" db:"ignore_in_ticket_counting"`
+	ID                     int  `db:"id"`
+	UserID                 int  `db:"user_id"`
+	ChatID                 int  `db:"chat_id"`
+	Status                 uint `db:"status"`
+	InviterID              int  `db:"inviter_id"`
+	IgnoreInTicketCounting bool `db:"ignore_in_ticket_counting"`
+	InTicketID             int  `db:"in_ticket_id"`
+
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 type Chat struct {
-	ID       int    `json:"id" db:"id"`
-	Title    string `json:"title" db:"title"`
-	Username string `json:"username" db:"username"`
+	ID       int    `db:"id"`
+	Title    string `db:"title"`
+	Username string `db:"username"`
+
+	CreatedAt time.Time `db:"created_at"`
 }
 
 type Competition struct {
-	ID           int        `json:"id" db:"id"`
-	CreatorID    int        `json:"creator_id" db:"creator_id"`
-	ChatID       int        `json:"chat_id" db:"chat_id"`
-	TopicID      int        `json:"topic_id" db:"topic_id"`
-	Keyword      string     `json:"keyword" db:"keyword"`
-	Multiplicity int        `json:"multiplicity" db:"multiplicity"`
-	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
-	EndedAt      *time.Time `json:"ended_at" db:"ended_at"`
+	ID           int        `db:"id"`
+	CreatorID    int        `db:"creator_id"`
+	ChatID       int        `db:"chat_id"`
+	TopicID      int        `db:"topic_id"`
+	Keyword      string     `db:"keyword"`
+	Multiplicity int        `db:"multiplicity"`
+	CreatedAt    time.Time  `db:"created_at"`
+	EndedAt      *time.Time `db:"ended_at"`
 }
 
 type Ticket struct {

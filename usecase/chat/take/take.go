@@ -14,5 +14,5 @@ type Params struct {
 
 func (p *Params) Run() (model.Chat, error) {
 	var chat model.Chat
-	return chat, p.DB.Select(&chat, "select * from chats where username = ?", p.Username)
+	return chat, p.DB.Get(&chat, "select * from chats where username = ?", p.Username)
 }

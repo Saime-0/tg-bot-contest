@@ -2,7 +2,9 @@ package counting
 
 import (
 	"github.com/jmoiron/sqlx"
+	"github.com/nullism/bqb"
 
+	"tgBotCompetition/common"
 	"tgBotCompetition/model"
 )
 
@@ -16,10 +18,10 @@ type Params struct {
 
 func (p Params) Run() error {
 	var unlinkedMembers []model.Member
-	if err := p.DB.Get(&unlinkedMembers, `
+	if err := p.DB.Select(&unlinkedMembers, `
 		select * from members
 		where not ignore_in_ticket_counting 
-			and in_ticket_id is null
+			and in_ticket_id=0
 			and status=?
 			and inviter_id=?
 			and chat_id=?
@@ -31,33 +33,51 @@ func (p Params) Run() error {
 		return nil
 	}
 
-	ticketsNumber := len(unlinkedMembers) / p.Comp.Multiplicity
-	if ticketsNumber == 0 {
+	if len(unlinkedMembers)/p.Comp.Multiplicity == 0 {
 		return nil
 	}
 
+	chunkedMembers := common.ChunkSlice(unlinkedMembers, p.Comp.Multiplicity)
+
 	var lastTicketNumber int
 	if err := p.DB.Get(&lastTicketNumber, `
-		select max(number) from tickets 
+		select ifnull(max(number),0) from tickets 
 		where competition_id=?
-	`); err != nil {
+	`, p.Comp.ID); err != nil {
 		return err
 	}
 
-	tickets := make([]model.Ticket, ticketsNumber)
-	for i := range tickets {
-		tickets[i] = model.Ticket{
-			Number:        i + lastTicketNumber + 1,
-			UserID:        p.User.ID,
-			CompetitionID: p.Comp.ID,
+	for i := 0; i < len(chunkedMembers); i++ {
+		ticketNumber := i + lastTicketNumber + 1
+		if _, err := p.DB.Exec(`
+			insert into tickets(number, user_id, competition_id)
+			values (?, ?, ?)
+		`, ticketNumber, p.User.ID, p.Comp.ID); err != nil {
+			return err
 		}
-	}
-	if _, err := p.DB.NamedExec(`
-		insert into tickets(number, user_id, competition_id)
-		values (:number, :user_id, :competition_id)
-	`, tickets); err != nil {
-		return err
+		memberIDs := model.MemberIDs(chunkedMembers[i])
+		if q, err := bqb.New(`
+			update members
+			set in_ticket_id=?
+			where id in (?)
+		`, ticketNumber, memberIDs).ToRaw(); err != nil {
+			return err
+		} else if _, err = p.DB.Exec(q); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
+
+//bqb.New()
+//memberIDs := model.MemberIDs(chunkedMembers[i])
+//if q, args, err := sqlx.In(`
+//			update members
+//			set in_ticket_id=?
+//			where id in (?)
+//		`, ticketNumber, memberIDs); err != nil {
+//return err
+//} else if _, err = p.DB.Query(q, args); err != nil {
+//return err
+//}
