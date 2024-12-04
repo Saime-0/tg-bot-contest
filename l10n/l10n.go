@@ -10,5 +10,5 @@ const (
 	CfgTopic                   = "топик"
 	DefaultKeyword             = "готов"
 	YourTicketNumbers          = "Ваши номера участника - "
-	YourTicketNumbersDelimiter = ","
+	YourTicketNumbersDelimiter = ", "
 )
