@@ -2,6 +2,7 @@ package updatesController
 
 import (
 	"errors"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -132,7 +133,7 @@ func (c *Controller) cmdStart(b *gotgbot.Bot, ctx *ext.Context) error {
 	return err
 }
 
-func (c *Controller) newMessage(b *gotgbot.Bot, ctx *ext.Context) error {
+func (c *Controller) newMessage(b *gotgbot.Bot, ctx *ext.Context) (err error) {
 	msg := ctx.Message
 	if (msg.Chat.Type != gotgbot.ChatTypeSupergroup && msg.Chat.Type != gotgbot.ChatTypeGroup) ||
 		!msg.GetSender().IsUser() ||
@@ -145,13 +146,34 @@ func (c *Controller) newMessage(b *gotgbot.Bot, ctx *ext.Context) error {
 		topicID = int(msg.MessageThreadId)
 	}
 
-	if err := (&messageCreated.Params{
+	var messageCreatedOut messageCreated.Out
+	if messageCreatedOut, err = (&messageCreated.Params{
 		DB:      c.DB,
 		Chat:    tgModel.ChatDomain(msg.Chat),
 		User:    tgModel.UserDomain(*msg.From),
 		Text:    msg.GetText(),
 		TopicID: topicID,
 	}).Run(); err != nil {
+		return err
+	}
+
+	if len(messageCreatedOut.CreatedTickets) > 0 {
+		if err = c.sendMessageAboutCreatedTickets(b, ctx, messageCreatedOut); err != nil {
+			slog.Error("sendMessageAboutCreatedTickets: " + err.Error())
+		}
+	}
+
+	return nil
+}
+
+func (c *Controller) sendMessageAboutCreatedTickets(b *gotgbot.Bot, ctx *ext.Context, o messageCreated.Out) error {
+	numbers := make([]string, len(o.CreatedTickets))
+	for i := range o.CreatedTickets {
+		numbers[i] = strconv.Itoa(o.CreatedTickets[i].Number)
+	}
+
+	text := l10n.YourTicketNumbers + strings.Join(numbers, l10n.YourTicketNumbersDelimiter)
+	if _, err := ctx.Message.Reply(b, text, nil); err != nil {
 		return err
 	}
 

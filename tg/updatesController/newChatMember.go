@@ -9,7 +9,7 @@ import (
 
 	"tgBotCompetition/model"
 	tgModel "tgBotCompetition/tg/model"
-	ucParticipationChanged "tgBotCompetition/usecase/member/participation/changed"
+	memberStatusUpdate "tgBotCompetition/usecase/member/statusUpdate"
 )
 
 func defineMemberStatus(old, new string) uint {
@@ -40,7 +40,7 @@ func (c *Controller) newChatMember(b *gotgbot.Bot, ctx *ext.Context) error {
 		ctx.ChatMember.IsJoinRequest() ||
 		ctx.ChatMember.ViaChatFolderInviteLink
 
-	err := (&ucParticipationChanged.Params{
+	err := (&memberStatusUpdate.Params{
 		DB:           c.DB,
 		Chat:         tgModel.ChatDomain(ctx.ChatMember.Chat),
 		MemberStatus: memberStatus,

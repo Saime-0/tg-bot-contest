@@ -14,8 +14,8 @@ type Params struct {
 
 func (p *Params) Run() error {
 	_, err := p.DB.NamedExec(`
-		INSERT OR REPLACE INTO chats (id, title, username)
-		VALUES (:id, :title, :username)
+		insert or replace into chats (id, title, username)
+		values (:id, :title, :username)
     `, p.Chat)
 
 	return err

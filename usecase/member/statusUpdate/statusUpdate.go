@@ -1,4 +1,4 @@
-package changed
+package statusUpdate
 
 import (
 	"github.com/jmoiron/sqlx"
@@ -30,9 +30,9 @@ func (p *Params) Run() error {
 	}
 
 	if res, err := p.DB.Exec(`
-		UPDATE members
-		SET status=?
-		WHERE chat_id=? and user_id=?
+		update members
+		set status=?
+		where chat_id=? and user_id=?
 	`, p.MemberStatus, p.Chat.ID, p.Participant.ID); err != nil {
 		return err
 	} else if affected, _ := res.RowsAffected(); affected == 0 {

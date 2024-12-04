@@ -22,16 +22,21 @@ type Params struct {
 	TopicID int
 }
 
-func (p Params) Run() error {
+type Out struct {
+	CreatedTickets []model.Ticket
+	Comp           model.Competition
+}
+
+func (p Params) Run() (Out, error) {
 	if p.Text == "" {
-		return nil
+		return Out{}, nil
 	}
 
 	if err := (&chatUpdate.Params{DB: p.DB, Chat: p.Chat}).Run(); err != nil {
-		return err
+		return Out{}, err
 	}
 	if err := (&userUpdate.Params{DB: p.DB, User: p.User}).Run(); err != nil {
-		return err
+		return Out{}, err
 	}
 
 	var comp model.Competition
@@ -42,9 +47,9 @@ func (p Params) Run() error {
 			and ended_at is null
 	`, p.Chat.ID, p.TopicID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil
+		return Out{}, nil
 	} else if err != nil {
-		return err
+		return Out{}, err
 	}
 
 	text := strings.ToLower(p.Text)
@@ -52,17 +57,20 @@ func (p Params) Run() error {
 
 	if strings.Contains(text, "\""+kw+"\"") ||
 		!strings.Contains(text, kw) {
-		return nil
+		return Out{}, nil
 	}
-
-	if err = (&ticketCounting.Params{
+	var ticketCountingOut ticketCounting.Out
+	if ticketCountingOut, err = (&ticketCounting.Params{
 		DB:   p.DB,
 		Chat: p.Chat,
 		User: p.User,
 		Comp: comp,
 	}).Run(); err != nil {
-		return err
+		return Out{}, err
 	}
 
-	return nil
+	return Out{
+		CreatedTickets: ticketCountingOut.CreatedTickets,
+		Comp:           comp,
+	}, nil
 }

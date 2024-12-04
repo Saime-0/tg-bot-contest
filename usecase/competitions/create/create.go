@@ -51,8 +51,8 @@ func (p *Params) Run() error {
 	}
 
 	_, err := p.DB.NamedExec(`
-		INSERT INTO competitions (creator_id,chat_id,topic_id,keyword,multiplicity)
-		VALUES (:creator_id,:chat_id,:topic_id,:keyword,:multiplicity)`,
+		insert into competitions (creator_id,chat_id,topic_id,keyword,multiplicity)
+		values (:creator_id,:chat_id,:topic_id,:keyword,:multiplicity)`,
 		model.Competition{
 			CreatorID:    p.CreatorID,
 			ChatID:       p.ChatID,
