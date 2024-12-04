@@ -25,7 +25,8 @@ func (p Params) Run() error {
 			and status=?
 			and inviter_id=?
 			and chat_id=?
-	`, model.MemberStatusJoin, p.User.ID, p.Chat.ID,
+			and created_at>=?
+	`, model.MemberStatusJoin, p.User.ID, p.Chat.ID, p.Comp.CreatedAt,
 	); err != nil {
 		return err
 	}
