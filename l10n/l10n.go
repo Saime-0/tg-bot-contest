@@ -21,11 +21,11 @@ const (
 	ContestConfigRunUsage      = `
 
 Для запуска конкурса, боту надо отправить сообщение строго в таком формате:
-/competitionConfigRun
+/contestConfigRun
 [название параметра] - [значение параметра]
 
 Пример сообщения:
-/competitionConfigRun
+/contestConfigRun
 кратность - 10
 ключевое слово - Готово
 чат - @exampleChatUsername
