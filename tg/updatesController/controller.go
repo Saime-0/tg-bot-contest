@@ -15,6 +15,7 @@ import (
 	tgModel "tgBotCompetition/tg/model"
 	"tgBotCompetition/usecase/chat/take"
 	compCreate "tgBotCompetition/usecase/competitions/create"
+	competitionStop "tgBotCompetition/usecase/competitions/stop"
 	messageCreated "tgBotCompetition/usecase/message/created"
 )
 
@@ -26,6 +27,9 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/competitionConfigRun")
 	}, c.competitionConfigRun))
+	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/competitionStop")
+	}, c.competitionStop))
 	dispatcher.AddHandler(handlers.NewMessage(nil, c.newMessage))
 	dispatcher.AddHandler(handlers.NewChatMember(nil, c.newChatMember))
 	//dispatcher.AddHandler(handlers.NewCommand("compr", c.competitionConfigRun))
@@ -174,6 +178,22 @@ func (c *Controller) sendMessageAboutCreatedTickets(b *gotgbot.Bot, ctx *ext.Con
 
 	text := l10n.YourTicketNumbers + strings.Join(numbers, l10n.YourTicketNumbersDelimiter)
 	if _, err := ctx.Message.Reply(b, text, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Controller) competitionStop(b *gotgbot.Bot, ctx *ext.Context) error {
+	words := strings.Fields(ctx.Message.GetText())
+	if len(words) < 2 {
+		return nil // todo: send msg
+	}
+
+	if err := (&competitionStop.Params{
+		DB:           c.DB,
+		ChatUsername: strings.TrimPrefix(words[1], "@"),
+	}).Run(); err != nil {
 		return err
 	}
 

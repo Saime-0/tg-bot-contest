@@ -29,7 +29,7 @@ CREATE TABLE chats(
 );
 
 CREATE TABLE tickets(
-    number INTEGER PRIMARY KEY,
+    number INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     competition_id INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
