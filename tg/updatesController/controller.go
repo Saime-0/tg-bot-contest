@@ -45,6 +45,7 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	for _, h := range handlerGroup {
 		dispatcher.AddHandler(h)
 	}
+
 	return nil
 }
 
