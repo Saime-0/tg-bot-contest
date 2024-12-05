@@ -23,16 +23,28 @@ type Controller struct {
 	DB *sqlx.DB
 }
 
-func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
-	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool {
-		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/contestConfigRun")
-	}, c.modulation(contestConfigRun)))
-	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool {
-		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/contestStop")
-	}, c.modulation(contestStopHandler)))
-	dispatcher.AddHandler(handlers.NewMessage(nil, c.modulation(newMessage)))
-	dispatcher.AddHandler(handlers.NewChatMember(nil, c.modulation(newChatMember)))
+func onlyInPrivateChat(fn func(b *gotgbot.Bot, ctx *ext.Context) error) func(b *gotgbot.Bot, ctx *ext.Context) error {
+	return func(b *gotgbot.Bot, ctx *ext.Context) error {
+		if ctx.EffectiveChat != nil &&
+			ctx.EffectiveChat.Type == gotgbot.ChatTypePrivate {
+			return fn(b, ctx)
+		}
 
+		return nil
+	}
+}
+
+func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
+	handlerGroup := []ext.Handler{
+		handlers.NewCommand("contestConfigRun", onlyInPrivateChat(c.modulation(contestConfigRun))),
+		handlers.NewCommand("contestStop", onlyInPrivateChat(c.modulation(contestStopHandler))),
+		handlers.NewMessage(nil, c.modulation(newMessage)),
+		handlers.NewChatMember(nil, c.modulation(newChatMember)),
+	}
+
+	for _, h := range handlerGroup {
+		dispatcher.AddHandler(h)
+	}
 	return nil
 }
 
