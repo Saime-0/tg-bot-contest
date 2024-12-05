@@ -1,19 +1,23 @@
 package update
 
 import (
-	"github.com/jmoiron/sqlx"
+	"database/sql"
 
 	"tgBotContest/model"
 )
 
 type Params struct {
-	TX *sqlx.Tx
+	TXDB txOrDB
 
 	User model.User
 }
 
+type txOrDB interface {
+	NamedExec(query string, arg interface{}) (sql.Result, error)
+}
+
 func (p *Params) Run() error {
-	_, err := p.TX.NamedExec(`
+	_, err := p.TXDB.NamedExec(`
 		insert into users (id,is_bot,first_name,username)
 		values (:id,:is_bot,:first_name,:username)
 		on conflict(id) do update set
@@ -26,6 +30,6 @@ func (p *Params) Run() error {
 	return err
 }
 
-func Run(tx *sqlx.Tx, initiator model.User) error {
-	return (&Params{TX: tx, User: initiator}).Run()
+func Run(db txOrDB, initiator model.User) error {
+	return (&Params{TXDB: db, User: initiator}).Run()
 }

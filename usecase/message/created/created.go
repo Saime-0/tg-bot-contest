@@ -1,12 +1,14 @@
 package created
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
 
+	"tgBotContest/autotx"
 	"tgBotContest/model"
 	chatUpdate "tgBotContest/usecase/chat/update"
 	ticketCounting "tgBotContest/usecase/ticket/counting"
@@ -14,7 +16,7 @@ import (
 )
 
 type Params struct {
-	TX *sqlx.Tx
+	DB *sqlx.DB
 
 	Chat    model.Chat
 	User    model.User
@@ -33,15 +35,18 @@ func (p Params) Run() (Out, error) {
 		return Out{}, nil
 	}
 
-	if err := (&chatUpdate.Params{TX: p.TX, Chat: p.Chat}).Run(); err != nil {
+	if err := chatUpdate.Run(p.DB, p.Chat); err != nil {
 		return Out{}, err
 	}
-	if err := (&userUpdate.Params{TX: p.TX, User: p.User}).Run(); err != nil {
+	if err := userUpdate.Run(p.DB, p.User); err != nil {
 		return Out{}, err
 	}
 
+	tx, err := p.DB.BeginTxx(context.Background(), nil)
+	defer func() { autotx.Commit(tx, err, recover()) }()
+
 	var comp model.Contest
-	err := p.TX.Get(&comp, `
+	err = tx.Get(&comp, `
 		select * from contests 
 		where chat_id=? 
 			and topic_id=?
@@ -62,7 +67,7 @@ func (p Params) Run() (Out, error) {
 	}
 	var ticketCountingOut ticketCounting.Out
 	if ticketCountingOut, err = (&ticketCounting.Params{
-		TX:   p.TX,
+		TX:   tx,
 		Chat: p.Chat,
 		User: p.User,
 		Comp: comp,
