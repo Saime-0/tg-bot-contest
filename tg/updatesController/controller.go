@@ -26,34 +26,38 @@ type Controller struct {
 func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/contestConfigRun")
-	}, c.contestConfigRun))
+	}, c.modulation(contestConfigRun)))
 	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.Chat.Type == gotgbot.ChatTypePrivate && strings.HasPrefix(msg.GetText(), "/contestStop")
-	}, c.contestStop))
-	dispatcher.AddHandler(handlers.NewMessage(nil, c.newMessage))
-	dispatcher.AddHandler(handlers.NewChatMember(nil, c.newChatMember))
-	//dispatcher.AddHandler(handlers.NewCommand("compr", c.contestConfigRun))
-	//dispatcher.AddHandler(handlers.NewCommand("contestStop", c.contestStop))
+	}, c.modulation(contestStopHandler)))
+	dispatcher.AddHandler(handlers.NewMessage(nil, c.modulation(newMessage)))
+	dispatcher.AddHandler(handlers.NewChatMember(nil, c.modulation(newChatMember)))
 
 	return nil
 }
 
-func (c *Controller) SetMyCommands(b *gotgbot.Bot) error {
-	//_, err := b.SetMyCommands([]gotgbot.BotCommand{
-	//	{
-	//		Command:     "/start",
-	//		Description: l10n.CmdDescStart,
-	//	},
-	//}, &gotgbot.SetMyCommandsOpts{
-	//	Scope: gotgbot.BotCommandScopeAllPrivateChats{},
-	//})
-
-	return nil
+type Request struct {
+	TX func() *sqlx.Tx
+	*gotgbot.Bot
+	ctx *ext.Context
 }
 
-func (c *Controller) contestConfigRun(b *gotgbot.Bot, ctx *ext.Context) error {
+func (c *Controller) modulation(fn func(request Request) error) func(b *gotgbot.Bot, ctx *ext.Context) error {
+	return func(b *gotgbot.Bot, ctx *ext.Context) error {
+		return InLazyTransaction(c.DB, func(tx func() *sqlx.Tx) error {
+			r := Request{
+				TX:  tx,
+				Bot: b,
+				ctx: ctx,
+			}
+			return fn(r)
+		})
+	}
+}
+
+func contestConfigRun(r Request) error {
 	// Разобрать сообщение конфига на параметры
-	lines := strings.Split(ctx.Message.GetText(), "\n")
+	lines := strings.Split(r.ctx.Message.GetText(), "\n")
 	kv := make(map[string]string, len(lines))
 	for _, line := range lines {
 		parts := strings.Split(strings.TrimSpace(line), l10n.CfgDelimiter)
@@ -64,43 +68,43 @@ func (c *Controller) contestConfigRun(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	// Параметры для создания конкурса
 	params := compCreate.Params{
-		DB:        c.DB,
+		TX:        r.TX(),
 		Keyword:   kv[l10n.CfgKeyword],
-		CreatorID: int(ctx.EffectiveSender.Id()),
+		CreatorID: int(r.ctx.EffectiveSender.Id()),
 	}
 
 	// Найти чат
 	chatUsername := strings.TrimPrefix(kv[l10n.CfgChatUsername], "@")
-	if chat, err := chatTake.Run(c.DB, chatUsername); err != nil {
-		return c.reactError(ue.Sql(err), b, ctx)
+	if chat, err := chatTake.Run(r.TX(), chatUsername); err != nil {
+		return r.reactError(ue.Sql(err))
 	} else {
 		params.ChatID = chat.ID
 	}
 
 	// Проверить наличие прав админа в чате
-	if err := c.checkAdminRights(b, ctx, int64(params.ChatID)); err != nil {
-		return c.reactError(err, b, ctx)
+	if err := r.checkAdminRights(int64(params.ChatID)); err != nil {
+		return r.reactError(err)
 	}
 
 	if multiplicity, err := strconv.ParseInt(kv[l10n.CfgMultiplicity], 10, 64); err != nil {
-		_, err = ctx.Message.Reply(b, l10n.ContestConfigRunUsage, nil)
+		_, err = r.ctx.Message.Reply(r.Bot, l10n.ContestConfigRunUsage, nil)
 		return err
 	} else {
 		params.Multiplicity = int(multiplicity)
 	}
 
 	if topicID, err := strconv.ParseInt(kv[l10n.CfgTopic], 10, 64); err != nil {
-		_, err = ctx.Message.Reply(b, l10n.ContestConfigRunUsage, nil)
+		_, err = r.ctx.Message.Reply(r.Bot, l10n.ContestConfigRunUsage, nil)
 		return err
 	} else {
 		params.TopicID = int(topicID)
 	}
 
 	if err := params.Run(); err != nil {
-		return c.reactError(err, b, ctx)
+		return r.reactError(err)
 	}
 
-	_, err := ctx.Message.Reply(b, l10n.ContestConfigRunSuccess, nil)
+	_, err := r.ctx.Message.Reply(r.Bot, l10n.ContestConfigRunSuccess, nil)
 	return err
 }
 
@@ -127,8 +131,8 @@ func (c *Controller) cmdStart(b *gotgbot.Bot, ctx *ext.Context) error {
 	return err
 }
 
-func (c *Controller) newMessage(b *gotgbot.Bot, ctx *ext.Context) (err error) {
-	msg := ctx.Message
+func newMessage(r Request) (err error) {
+	msg := r.ctx.Message
 	if (msg.Chat.Type != gotgbot.ChatTypeSupergroup && msg.Chat.Type != gotgbot.ChatTypeGroup) ||
 		!msg.GetSender().IsUser() ||
 		msg.From == nil ||
@@ -142,76 +146,76 @@ func (c *Controller) newMessage(b *gotgbot.Bot, ctx *ext.Context) (err error) {
 
 	var messageCreatedOut messageCreated.Out
 	if messageCreatedOut, err = (&messageCreated.Params{
-		DB:      c.DB,
+		TX:      r.TX(),
 		Chat:    tgModel.ChatDomain(msg.Chat),
 		User:    tgModel.UserDomain(*msg.From),
 		Text:    msg.GetText(),
 		TopicID: topicID,
 	}).Run(); err != nil {
-		return c.reactError(err, b, ctx)
+		return r.reactError(err)
 	}
 
 	if len(messageCreatedOut.CreatedTickets) > 0 {
-		err = c.sendMessageAboutCreatedTickets(b, ctx, messageCreatedOut)
+		err = r.sendMessageAboutCreatedTickets(messageCreatedOut)
 		return err
 	} else if messageCreatedOut.CalculationWasStarted {
-		_, err = ctx.Message.Reply(b, l10n.DintGetRightNumberOfInvitations, nil)
+		_, err = r.ctx.Message.Reply(r.Bot, l10n.DintGetRightNumberOfInvitations, nil)
 		return err
 	}
 
 	return nil
 }
 
-func (c *Controller) sendMessageAboutCreatedTickets(b *gotgbot.Bot, ctx *ext.Context, o messageCreated.Out) error {
+func (r Request) sendMessageAboutCreatedTickets(o messageCreated.Out) error {
 	numbers := make([]string, len(o.CreatedTickets))
 	for i := range o.CreatedTickets {
 		numbers[i] = strconv.Itoa(o.CreatedTickets[i].Number)
 	}
 
 	text := l10n.YourTicketNumbers + strings.Join(numbers, l10n.YourTicketNumbersDelimiter)
-	if _, err := ctx.Message.Reply(b, text, nil); err != nil {
+	if _, err := r.ctx.Message.Reply(r.Bot, text, nil); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Controller) contestStop(b *gotgbot.Bot, ctx *ext.Context) (err error) {
-	words := strings.Fields(ctx.Message.GetText())
+func contestStopHandler(r Request) (err error) {
+	words := strings.Fields(r.ctx.Message.GetText())
 	if len(words) < 2 {
-		_, err = ctx.Message.Reply(b, l10n.ContestStopUsage, nil)
+		_, err = r.ctx.Message.Reply(r.Bot, l10n.ContestStopUsage, nil)
 		return err
 	}
 
 	// Найти чат
 	var chat model.Chat
-	if chat, err = chatTake.Run(c.DB, strings.TrimPrefix(words[1], "@")); err != nil {
-		return c.reactError(ue.Sql(err), b, ctx)
+	if chat, err = chatTake.Run(r.TX(), strings.TrimPrefix(words[1], "@")); err != nil {
+		return r.reactError(ue.Sql(err))
 	}
 
 	// Проверить наличие прав админа в чате
-	if err = c.checkAdminRights(b, ctx, int64(chat.ID)); err != nil {
-		return c.reactError(err, b, ctx)
+	if err = r.checkAdminRights(int64(chat.ID)); err != nil {
+		return r.reactError(err)
 	}
 
 	if err = (&contestStop.Params{
-		DB:     c.DB,
+		TX:     r.TX(),
 		ChatID: chat.ID,
 	}).Run(); err != nil {
-		return c.reactError(err, b, ctx)
+		return r.reactError(err)
 	}
 
-	_, err = ctx.Message.Reply(b, l10n.ContestStopSuccess, nil)
+	_, err = r.ctx.Message.Reply(r.Bot, l10n.ContestStopSuccess, nil)
 	return err
 }
 
-func (c *Controller) checkAdminRights(b *gotgbot.Bot, ctx *ext.Context, chatID int64) error {
-	if admins, err := b.GetChatAdministrators(chatID, nil); err != nil {
+func (r Request) checkAdminRights(chatID int64) error {
+	if admins, err := r.GetChatAdministrators(chatID, nil); err != nil {
 		return err
 	} else {
 		var allowed bool
 		for _, admin := range admins {
-			if admin.GetUser().Id == ctx.EffectiveSender.Id() {
+			if admin.GetUser().Id == r.ctx.EffectiveSender.Id() {
 				allowed = true
 				break
 			}

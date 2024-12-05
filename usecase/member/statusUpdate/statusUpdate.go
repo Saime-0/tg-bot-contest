@@ -9,7 +9,7 @@ import (
 )
 
 type Params struct {
-	DB *sqlx.DB
+	TX *sqlx.Tx
 
 	Chat         model.Chat
 	MemberStatus uint
@@ -19,17 +19,17 @@ type Params struct {
 }
 
 func (p *Params) Run() error {
-	if err := chatUpdate.Run(p.DB, p.Chat); err != nil {
+	if err := chatUpdate.Run(p.TX, p.Chat); err != nil {
 		return err
 	}
-	if err := userUpdate.Run(p.DB, p.Participant); err != nil {
+	if err := userUpdate.Run(p.TX, p.Participant); err != nil {
 		return err
 	}
-	if err := userUpdate.Run(p.DB, p.Initiator); err != nil {
+	if err := userUpdate.Run(p.TX, p.Initiator); err != nil {
 		return err
 	}
 
-	if res, err := p.DB.Exec(`
+	if res, err := p.TX.Exec(`
 		update members
 		set status=?
 		where chat_id=? and user_id=?
@@ -61,7 +61,7 @@ func (p *Params) saveMember() error {
 		member.InviterID = p.Initiator.ID
 	}
 
-	if _, err := p.DB.NamedExec(`
+	if _, err := p.TX.NamedExec(`
 			insert into members(chat_id,user_id,status,inviter_id,ignore_in_ticket_counting)
 			values(:chat_id,:user_id,:status,:inviter_id,:ignore_in_ticket_counting)
 		`, member); err != nil {

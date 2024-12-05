@@ -21,9 +21,6 @@ func Run(ctx context.Context, token string, db *sqlx.DB) (err error) {
 	if client.Bot, err = tgClient.NewBot(token); err != nil {
 		return fmt.Errorf("can't create bot: %w", err)
 	}
-	if err = updatesController.SetMyCommands(client.Bot); err != nil {
-		return fmt.Errorf("can't set commands: %w", err)
-	}
 
 	client.Dispatcher = tgClient.NewDispatcher()
 	if err = updatesController.AddHandlers(client.Dispatcher); err != nil {

@@ -7,13 +7,13 @@ import (
 )
 
 type Params struct {
-	DB *sqlx.DB
+	TX *sqlx.Tx
 
 	User model.User
 }
 
 func (p *Params) Run() error {
-	_, err := p.DB.NamedExec(`
+	_, err := p.TX.NamedExec(`
 		insert into users (id,is_bot,first_name,username)
 		values (:id,:is_bot,:first_name,:username)
 		on conflict(id) do update set
@@ -26,6 +26,6 @@ func (p *Params) Run() error {
 	return err
 }
 
-func Run(db *sqlx.DB, initiator model.User) error {
-	return (&Params{DB: db, User: initiator}).Run()
+func Run(tx *sqlx.Tx, initiator model.User) error {
+	return (&Params{TX: tx, User: initiator}).Run()
 }

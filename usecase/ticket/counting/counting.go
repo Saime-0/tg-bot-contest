@@ -8,7 +8,7 @@ import (
 )
 
 type Params struct {
-	DB *sqlx.DB
+	TX *sqlx.Tx
 
 	Chat model.Chat
 	User model.User
@@ -21,7 +21,7 @@ type Out struct {
 
 func (p Params) Run() (Out, error) {
 	var unlinkedMembers []model.Member
-	if err := p.DB.Select(&unlinkedMembers, `
+	if err := p.TX.Select(&unlinkedMembers, `
 		select * from members
 		where not ignore_in_ticket_counting 
 			and in_ticket_id=0
@@ -44,7 +44,7 @@ func (p Params) Run() (Out, error) {
 	chunkedMembers := common.ChunkSlice(unlinkedMembers, p.Comp.Multiplicity)
 
 	var lastTicketNumber int
-	if err := p.DB.Get(&lastTicketNumber, `
+	if err := p.TX.Get(&lastTicketNumber, `
 		select ifnull(max(number),0) from tickets 
 		where contest_id=?
 	`, p.Comp.ID); err != nil {
@@ -58,7 +58,7 @@ func (p Params) Run() (Out, error) {
 			UserID:    p.User.ID,
 			ContestID: p.Comp.ID,
 		}
-		if _, err := p.DB.NamedExec(`
+		if _, err := p.TX.NamedExec(`
 			insert into tickets(number, user_id, contest_id)
 			values (:number, :user_id, :contest_id)
 		`, ticket); err != nil {
@@ -71,7 +71,7 @@ func (p Params) Run() (Out, error) {
 			where id in (?)
 		`, ticket.Number, memberIDs); err != nil {
 			return Out{}, err
-		} else if _, err = p.DB.Exec(q, args...); err != nil {
+		} else if _, err = p.TX.Exec(q, args...); err != nil {
 			return Out{}, err
 		} else {
 			out.CreatedTickets = append(out.CreatedTickets, ticket)

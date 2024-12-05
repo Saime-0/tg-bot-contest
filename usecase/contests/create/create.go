@@ -9,7 +9,7 @@ import (
 )
 
 type Params struct {
-	DB *sqlx.DB
+	TX *sqlx.Tx
 
 	Multiplicity int
 	Keyword      string
@@ -25,7 +25,7 @@ const (
 
 func (p *Params) Run() error {
 	var exists bool
-	if err := p.DB.Get(&exists, `
+	if err := p.TX.Get(&exists, `
 		select exists(
 		    select 1 from contests 
 			where chat_id=? 
@@ -45,7 +45,7 @@ func (p *Params) Run() error {
 		p.Keyword = DefaultKeyword
 	}
 
-	_, err := p.DB.NamedExec(`
+	_, err := p.TX.NamedExec(`
 		insert into contests (creator_id,chat_id,topic_id,keyword,multiplicity)
 		values (:creator_id,:chat_id,:topic_id,:keyword,:multiplicity)`,
 		model.Contest{

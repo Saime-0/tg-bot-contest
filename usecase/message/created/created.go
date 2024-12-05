@@ -14,7 +14,7 @@ import (
 )
 
 type Params struct {
-	DB *sqlx.DB
+	TX *sqlx.Tx
 
 	Chat    model.Chat
 	User    model.User
@@ -33,15 +33,15 @@ func (p Params) Run() (Out, error) {
 		return Out{}, nil
 	}
 
-	if err := (&chatUpdate.Params{DB: p.DB, Chat: p.Chat}).Run(); err != nil {
+	if err := (&chatUpdate.Params{TX: p.TX, Chat: p.Chat}).Run(); err != nil {
 		return Out{}, err
 	}
-	if err := (&userUpdate.Params{DB: p.DB, User: p.User}).Run(); err != nil {
+	if err := (&userUpdate.Params{TX: p.TX, User: p.User}).Run(); err != nil {
 		return Out{}, err
 	}
 
 	var comp model.Contest
-	err := p.DB.Get(&comp, `
+	err := p.TX.Get(&comp, `
 		select * from contests 
 		where chat_id=? 
 			and topic_id=?
@@ -62,7 +62,7 @@ func (p Params) Run() (Out, error) {
 	}
 	var ticketCountingOut ticketCounting.Out
 	if ticketCountingOut, err = (&ticketCounting.Params{
-		DB:   p.DB,
+		TX:   p.TX,
 		Chat: p.Chat,
 		User: p.User,
 		Comp: comp,

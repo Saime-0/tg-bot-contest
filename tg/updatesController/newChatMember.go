@@ -4,9 +4,6 @@ import (
 	"log"
 	"slices"
 
-	"github.com/PaulSonOfLars/gotgbot/v2"
-	"github.com/PaulSonOfLars/gotgbot/v2/ext"
-
 	"tgBotContest/model"
 	tgModel "tgBotContest/tg/model"
 	memberStatusUpdate "tgBotContest/usecase/member/statusUpdate"
@@ -25,24 +22,24 @@ func defineMemberStatus(old, new string) uint {
 	}
 }
 
-func (c *Controller) newChatMember(b *gotgbot.Bot, ctx *ext.Context) error {
-	oldStatus := ctx.ChatMember.OldChatMember.GetStatus()
-	newStatus := ctx.ChatMember.NewChatMember.GetStatus()
+func newChatMember(r Request) error {
+	oldStatus := r.ctx.ChatMember.OldChatMember.GetStatus()
+	newStatus := r.ctx.ChatMember.NewChatMember.GetStatus()
 	log.Println(oldStatus, "->", newStatus)
 
 	memberStatus := defineMemberStatus(oldStatus, newStatus)
 	if memberStatus == 0 {
 		return nil
 	}
-	initiator := ctx.ChatMember.From
-	participant := ctx.ChatMember.NewChatMember.GetUser()
-	viaLink := ctx.ChatMember.InviteLink != nil ||
-		ctx.ChatMember.IsJoinRequest() ||
-		ctx.ChatMember.ViaChatFolderInviteLink
+	initiator := r.ctx.ChatMember.From
+	participant := r.ctx.ChatMember.NewChatMember.GetUser()
+	viaLink := r.ctx.ChatMember.InviteLink != nil ||
+		r.ctx.ChatMember.IsJoinRequest() ||
+		r.ctx.ChatMember.ViaChatFolderInviteLink
 
 	err := (&memberStatusUpdate.Params{
-		DB:           c.DB,
-		Chat:         tgModel.ChatDomain(ctx.ChatMember.Chat),
+		TX:           r.TX(),
+		Chat:         tgModel.ChatDomain(r.ctx.ChatMember.Chat),
 		MemberStatus: memberStatus,
 		Participant:  tgModel.UserDomain(participant),
 		Initiator:    tgModel.UserDomain(initiator),

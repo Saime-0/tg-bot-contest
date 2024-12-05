@@ -8,13 +8,13 @@ import (
 )
 
 type Params struct {
-	DB *sqlx.DB
+	TX *sqlx.Tx
 
 	ChatID int
 }
 
 func (p *Params) Run() error {
-	if res, err := p.DB.Exec(`
+	if res, err := p.TX.Exec(`
 		update contests 
 		set ended_at = current_timestamp
 		where ended_at is null

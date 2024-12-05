@@ -7,13 +7,13 @@ import (
 )
 
 type Params struct {
-	DB *sqlx.DB
+	TX *sqlx.Tx
 
 	Chat model.Chat
 }
 
 func (p *Params) Run() error {
-	_, err := p.DB.NamedExec(`
+	_, err := p.TX.NamedExec(`
 		insert into chats (id, title, username)
 		values (:id, :title, :username)
 		on conflict (id) do update set 
@@ -24,6 +24,6 @@ func (p *Params) Run() error {
 	return err
 }
 
-func Run(db *sqlx.DB, chat model.Chat) error {
-	return (&Params{DB: db, Chat: chat}).Run()
+func Run(tx *sqlx.Tx, chat model.Chat) error {
+	return (&Params{TX: tx, Chat: chat}).Run()
 }

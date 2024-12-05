@@ -38,7 +38,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	if err := tg.Run(ctx, token, db); err != nil {
+	if err = tg.Run(ctx, token, db); err != nil {
 		log.Fatal(err)
 	}
 

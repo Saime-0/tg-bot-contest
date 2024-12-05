@@ -7,19 +7,19 @@ import (
 )
 
 type Params struct {
-	DB *sqlx.DB
+	TX *sqlx.Tx
 
 	Username string
 }
 
 func (p *Params) Run() (model.Chat, error) {
 	var chat model.Chat
-	return chat, p.DB.Get(&chat, "select * from chats where username = ?", p.Username)
+	return chat, p.TX.Get(&chat, "select * from chats where username = ?", p.Username)
 }
 
-func Run(db *sqlx.DB, username string) (model.Chat, error) {
+func Run(tx *sqlx.Tx, username string) (model.Chat, error) {
 	return (&Params{
-		DB:       db,
+		TX:       tx,
 		Username: username,
 	}).Run()
 }
