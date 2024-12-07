@@ -2,12 +2,23 @@
 
 Перед первым деплоем необходимо:
 
-- Скопировать проект на удаленный сервер и подключиться по ssh
-- Установить `docker`, `sqlite`
-- Перейти в директорию проекта
+- Установить `docker`, `sqlite`, `rsync`
+- Скопировать проект на удаленный сервер
+
+```shell
+SSH_HOST=server-ssh-host DIR="~/src/tgbotcontest/" ./scripts/rsync-project.sh
+```
+
+- Подключиться по ssh и перейти в директорию проекта
+
+```shell
+ssh server-ssh-host
+cd ~/src/tgbotcontest
+```
+
 - Выполнить скрипт для инициализации БД
 
-```sh
+```shell
 mkdir -p ~/.local/share/contest-bot
-MIGRATION_DIR="./migrations/main" DB_FILE="~/.local/share/contest-bot/main.db" ./scripts/init-scheme.sh
+MIGRATION_DIR=./migrations/main DB_FILE=~/.local/share/contest-bot/main.db ./scripts/init-scheme.sh
 ```
