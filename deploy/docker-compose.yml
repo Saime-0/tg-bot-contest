@@ -1,0 +1,6 @@
+services:
+  contest-bot:
+    env_file: .env
+    volumes:
+      - ~/.local/share/contest-bot/main.db:./main.db
+    build: .

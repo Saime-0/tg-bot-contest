@@ -19,6 +19,11 @@ func main() {
 		log.Fatal("TOKEN environment variable is empty")
 	}
 
+	dbDSN := os.Getenv("MAIN_DATABASE_DSN")
+	if dbDSN == "" {
+		log.Fatal("MAIN_DATABASE_DSN environment variable is empty")
+	}
+
 	// Создаем контекст для graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -33,7 +38,7 @@ func main() {
 		cancel() // Отменяем контекст
 	}()
 
-	db, err := sqlx.Connect("sqlite3", "file:main.db?cache=shared")
+	db, err := sqlx.Connect("sqlite3", dbDSN)
 	if err != nil {
 		log.Fatalln(err)
 	}
