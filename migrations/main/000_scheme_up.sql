@@ -45,3 +45,8 @@ CREATE TABLE contests(
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ended_at TIMESTAMP NULL
 );
+
+CREATE TABLE metadata (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
