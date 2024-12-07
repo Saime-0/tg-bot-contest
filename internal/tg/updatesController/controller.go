@@ -10,15 +10,15 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
 	"github.com/jmoiron/sqlx"
 
-	"tgBotContest/internal/l10n"
-	"tgBotContest/internal/model"
-	model2 "tgBotContest/internal/tg/model"
-	"tgBotContest/internal/ue"
-	chatTake "tgBotContest/internal/usecase/chat/take"
-	compCreate "tgBotContest/internal/usecase/contests/create"
-	contestStop "tgBotContest/internal/usecase/contests/stop"
-	memberStatusUpdate "tgBotContest/internal/usecase/member/statusUpdate"
-	messageCreated "tgBotContest/internal/usecase/message/created"
+	"github.com/Saime-0/tg-bot-contest/internal/l10n"
+	"github.com/Saime-0/tg-bot-contest/internal/model"
+	model2 "github.com/Saime-0/tg-bot-contest/internal/tg/model"
+	"github.com/Saime-0/tg-bot-contest/internal/ue"
+	chatTake "github.com/Saime-0/tg-bot-contest/internal/usecase/chat/take"
+	compCreate "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/create"
+	contestStop "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/stop"
+	memberStatusUpdate "github.com/Saime-0/tg-bot-contest/internal/usecase/member/statusUpdate"
+	messageCreated "github.com/Saime-0/tg-bot-contest/internal/usecase/message/created"
 )
 
 type Controller struct {

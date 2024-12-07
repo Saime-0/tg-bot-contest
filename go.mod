@@ -1,4 +1,4 @@
-module tgBotContest
+module github.com/Saime-0/tg-bot-contest
 
 go 1.23.3
 

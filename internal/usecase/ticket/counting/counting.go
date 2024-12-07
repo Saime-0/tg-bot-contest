@@ -3,8 +3,8 @@ package counting
 import (
 	"github.com/jmoiron/sqlx"
 
-	"tgBotContest/internal/common"
-	model2 "tgBotContest/internal/model"
+	"github.com/Saime-0/tg-bot-contest/internal/common"
+	model2 "github.com/Saime-0/tg-bot-contest/internal/model"
 )
 
 type Params struct {

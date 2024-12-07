@@ -4,8 +4,8 @@ import (
 	"errors"
 	"log/slog"
 
-	"tgBotContest/internal/l10n"
-	"tgBotContest/internal/ue"
+	"github.com/Saime-0/tg-bot-contest/internal/l10n"
+	"github.com/Saime-0/tg-bot-contest/internal/ue"
 )
 
 func (r Request) reactError(err error) error {

@@ -3,7 +3,7 @@ package update
 import (
 	"database/sql"
 
-	"tgBotContest/internal/model"
+	"github.com/Saime-0/tg-bot-contest/internal/model"
 )
 
 type Params struct {

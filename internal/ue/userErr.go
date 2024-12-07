@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"tgBotContest/internal/l10n"
+	"github.com/Saime-0/tg-bot-contest/internal/l10n"
 )
 
 type Err struct {

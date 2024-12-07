@@ -3,7 +3,7 @@ package model
 import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 
-	"tgBotContest/internal/model"
+	"github.com/Saime-0/tg-bot-contest/internal/model"
 )
 
 func UserDomain(tgUser gotgbot.User) model.User {

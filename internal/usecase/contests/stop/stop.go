@@ -3,8 +3,8 @@ package stop
 import (
 	"github.com/jmoiron/sqlx"
 
-	"tgBotContest/internal/l10n"
-	"tgBotContest/internal/ue"
+	"github.com/Saime-0/tg-bot-contest/internal/l10n"
+	"github.com/Saime-0/tg-bot-contest/internal/ue"
 )
 
 type Params struct {

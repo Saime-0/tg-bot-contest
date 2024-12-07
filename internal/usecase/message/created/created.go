@@ -8,11 +8,11 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
-	"tgBotContest/internal/autotx"
-	"tgBotContest/internal/model"
-	chatUpdate "tgBotContest/internal/usecase/chat/update"
-	ticketCounting "tgBotContest/internal/usecase/ticket/counting"
-	userUpdate "tgBotContest/internal/usecase/user/update"
+	"github.com/Saime-0/tg-bot-contest/internal/autotx"
+	"github.com/Saime-0/tg-bot-contest/internal/model"
+	chatUpdate "github.com/Saime-0/tg-bot-contest/internal/usecase/chat/update"
+	ticketCounting "github.com/Saime-0/tg-bot-contest/internal/usecase/ticket/counting"
+	userUpdate "github.com/Saime-0/tg-bot-contest/internal/usecase/user/update"
 )
 
 type Params struct {
