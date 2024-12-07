@@ -10,7 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 
-	"tgBotContest/tg"
+	"tgBotContest/internal/tg"
 )
 
 func main() {
