@@ -18,12 +18,11 @@ if [ -z "$DB_FILE" ]; then
     exit 1
 fi
 
-# Получение названия последнего файла миграции
-last_file=$(ls -1 "$MIGRATION_DIR"/*up.sql | tail -n 1)
+last_file=$(ls -1 "$MIGRATION_DIR"/*up.sql | tail -n 1) # Получение названия последнего файла миграции
 db_version=$(basename "$last_file")  # Получаем имя файла без пути
 
 # Выполнение миграций
-echo "Выполнение миграций..."
+echo "Выполнение инициализации..."
 {
     echo "BEGIN TRANSACTION;"
     cat "$MIGRATION_DIR"/*up.sql
