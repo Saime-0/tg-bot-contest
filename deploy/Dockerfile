@@ -2,7 +2,7 @@
 FROM golang:1.23 AS builder
 
 # Устанавливаем рабочую директорию
-WORKDIR /usr/src/app
+WORKDIR /src
 
 # Копируем go.mod и go.sum и загружаем зависимости
 COPY go.* .
@@ -12,17 +12,13 @@ RUN go mod download && go mod verify
 COPY . .
 
 # Собираем приложение
-RUN go build -v -o /usr/local/bin/app ./cmd/app/main.go
+RUN CGO_ENABLED=0 go build -v -o /bin/app ./cmd/app/main.go
 
 # Используем более легкий образ для запуска
 FROM alpine:latest
 
-# Устанавливаем необходимые библиотеки
-RUN apk --no-cache add sqlite sqlite-dev # libc6-compat
-
 # Копируем собранное приложение из предыдущего этапа
-COPY --from=builder /usr/local/bin/app /usr/local/bin/app
+COPY --from=builder /bin/app /usr/local/bin/app
 
 # Указываем команду для запуска приложения
 CMD ["app"]
-#CMD ["tail", "-f", "/dev/null"]

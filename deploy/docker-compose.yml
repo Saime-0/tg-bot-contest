@@ -1,6 +1,9 @@
 services:
   tgbotcontest:
     env_file: .env
+    restart: unless-stopped
+    logging:
+      driver: journald
     volumes:
       - ~/.local/share/contest-bot/main.db:/var/lib/tgbotcontest/main.db
     build:
