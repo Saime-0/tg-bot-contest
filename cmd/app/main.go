@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	_ "github.com/glebarez/go-sqlite"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/Saime-0/tg-bot-contest/internal/tg"
 )
@@ -38,7 +38,7 @@ func main() {
 		cancel() // Отменяем контекст
 	}()
 
-	db, err := sqlx.Connect("sqlite3", dbDSN)
+	db, err := sqlx.Connect("sqlite", dbDSN)
 	if err != nil {
 		log.Fatalln(err)
 	}
