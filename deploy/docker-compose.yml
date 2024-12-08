@@ -1,6 +1,9 @@
 services:
-  contest-bot:
+  tgbotcontest:
     env_file: .env
     volumes:
-      - ~/.local/share/contest-bot/main.db:./main.db
-    build: .
+      - ~/.local/share/contest-bot/main.db:/var/lib/tgbotcontest/main.db
+    build:
+      context: ../
+      dockerfile: ./deploy/Dockerfile
+    container_name: tgbotcontest
