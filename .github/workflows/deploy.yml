@@ -38,5 +38,6 @@ jobs:
 
       - name: SSH Remote Commands
         run: |
-          ssh Prod
+          ssh Prod <<EOF
           neofetch
+          EOF
