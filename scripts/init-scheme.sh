@@ -3,13 +3,19 @@
 # Завершать скрипт при ошибках
 set -e
 
+# Получение пути до директории с миграциями и названия файла БД из переменных окружения
+MIGRATION_DIR="${MIGRATION_DIR:-}" # Путь до директории с миграциями
+if [ -z "$MIGRATION_DIR" ]; then
+    echo "Ошибка: переменная окружения MIGRATION_DIR не установлена."
+    exit 1
+fi
+
 DSN="${DSN:-}" # Строка соединения с БД
 if [ -z "$DSN" ]; then
     echo "Ошибка: переменная окружения DSN не установлена."
     exit 1
 fi
 
-MIGRATION_DIR=migrations/main # Путь до директории с миграциями
 
 last_file=$(ls -1 "$MIGRATION_DIR"/*up.sql | tail -n 1) # Получение названия последнего файла миграции
 db_version=$(basename "$last_file")  # Получаем имя файла без пути

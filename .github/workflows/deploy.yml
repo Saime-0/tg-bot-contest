@@ -55,7 +55,7 @@ jobs:
           echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: SSH check or prepare server for application
+      - name: SSH create dirs check sqlite3
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.PROD_SSH_HOST }}
@@ -66,10 +66,6 @@ jobs:
             [ ! -d ${{ env.DEPLOY_DIR }} ] && mkdir -p ${{ env.DEPLOY_DIR }}
             [ ! -d ${{ secrets.PROD_MAIN_DATABASE_DIR }} ] && mkdir -p ${{ secrets.PROD_MAIN_DATABASE_DIR }}
             sqlite3 --version
-            if ! sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} "SELECT 1;" > /dev/null 2>&1; then
-              sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} ""
-              DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} ./scripts/init-scheme.sh
-            fi
 
       - name: Rsync copy project
         run: SSH_HOST=Prod DIR=${{ env.DEPLOY_DIR }}  ./scripts/rsync-project.sh
@@ -83,6 +79,10 @@ jobs:
           script: |
             set -e
             cd ${{ env.DEPLOY_DIR }}
+            if ! sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} "SELECT 1;" > /dev/null 2>&1; then
+              sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} ""
+              MIGRATION_DIR=${{ secrets.PROD_MAIN_DATABASE_DIR }}/migrations/main DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} ./scripts/init-scheme.sh
+            fi
             > deploy/.env
             echo TOKEN=${{ secrets.PROD_BOT_TOKEN }} >> deploy/.env
             echo MAIN_DATABASE_DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} >> deploy/.env
