@@ -26,6 +26,7 @@ jobs:
           echo "  HostName ${{ secrets.PROD_SSH_HOST }}" >> ~/.ssh/config
           echo "  User ${{ secrets.PROD_SSH_USERNAME }}" >> ~/.ssh/config
           echo "  IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           chmod 600 ~/.ssh/config
 
       - name: Add SSH key
