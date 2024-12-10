@@ -42,5 +42,4 @@ jobs:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USERNAME }}
           key: ${{ secrets.PROD_SSH_SSHKEY }}
-
-        script: neofetch
+          script: neofetch
