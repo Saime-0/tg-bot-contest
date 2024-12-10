@@ -4,17 +4,50 @@ on:
   push:
     branches:
       - main
+      - master
+  pull_request:
 
 env:
   DEPLOY_DIR: /home/${{ secrets.PROD_SSH_USERNAME }}/src/tgbotcontest
 
+permissions:
+  contents: read
+  # golangci:
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  # pull-requests: read
+
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
 
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up SSH config
         run: |
@@ -42,4 +75,10 @@ jobs:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
-          script: neofetch
+          script: |
+            cd $${{ env.DEPLOY_DIR }}
+            cat <<EOF > $${{ env.DEPLOY_DIR }}/.env  
+            TOKEN=${{ secrets.PROD_BOT_TOKEN }}
+            MAIN_DATABASE_DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }}
+            EOF
+            docker compose -f deploy/docker-compose.yml up --force-recreate --build -d tgbotcontest
