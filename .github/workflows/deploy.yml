@@ -55,10 +55,27 @@ jobs:
           echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
+      - name: SSH check or prepare server for application
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            set -e
+            sqlite --version
+            set +e
+#           Check and create the deployment directory if it not exist
+            [ ! -d ${{ env.DEPLOY_DIR }} ] && mkdir -p ${{ env.DEPLOY_DIR }}
+#           Check if database exists; if not, create it
+            sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} "SELECT 1;" > /dev/null 2>&1 || sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} ""
+#           Apply migrations
+            DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} ./scripts/init-scheme.sh
+
       - name: Rsync copy project
         run: SSH_HOST=Prod DIR=${{ env.DEPLOY_DIR }}  ./scripts/rsync-project.sh
 
-      - name: SSH Remote Commands
+      - name: SSH start application
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.PROD_SSH_HOST }}

@@ -3,20 +3,13 @@
 # Завершать скрипт при ошибках
 set -e
 
-# Получение пути до директории с миграциями и названия файла БД из переменных окружения
-MIGRATION_DIR="${MIGRATION_DIR:-}" # Путь до директории с миграциями
-DB_FILE="${DB_FILE:-}" # Название файла базы данных
-
-# Проверка на наличие обязательных переменных окружения
-if [ -z "$MIGRATION_DIR" ]; then
-    echo "Ошибка: переменная окружения MIGRATION_DIR не установлена."
+DSN="${DSN:-}" # Строка соединения с БД
+if [ -z "$DSN" ]; then
+    echo "Ошибка: переменная окружения DSN не установлена."
     exit 1
 fi
 
-if [ -z "$DB_FILE" ]; then
-    echo "Ошибка: переменная окружения DB_FILE не установлена."
-    exit 1
-fi
+MIGRATION_DIR=migrations/main # Путь до директории с миграциями
 
 last_file=$(ls -1 "$MIGRATION_DIR"/*up.sql | tail -n 1) # Получение названия последнего файла миграции
 db_version=$(basename "$last_file")  # Получаем имя файла без пути
@@ -28,6 +21,6 @@ echo "Выполнение инициализации..."
     cat "$MIGRATION_DIR"/*up.sql
     echo "INSERT OR REPLACE INTO metadata (key, value) VALUES ('db_version', '$db_version');"
     echo "COMMIT;"
-} | sqlite3 "$DB_FILE"
+} | sqlite3 "$DSN"
 
-echo "База данных инициализирована"
+echo "Схема база данных инициализирована"

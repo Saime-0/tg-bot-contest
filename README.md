@@ -20,5 +20,5 @@ cd ~/src/tgbotcontest
 
 ```shell
 mkdir -p ~/.local/share/contest-bot
-MIGRATION_DIR=./migrations/main DB_FILE=~/.local/share/contest-bot/main.db ./scripts/init-scheme.sh
+DSN=file:~/.local/share/contest-bot/main.db ./scripts/init-scheme.sh
 ```
