@@ -3,7 +3,7 @@ name: deploy
 on:
   push:
     branches:
-      - master
+      - main
 
 env:
   DEPLOY_DIR: /home/${{ secrets.PROD_SSH_USERNAME }}/src/tgbotcontest
