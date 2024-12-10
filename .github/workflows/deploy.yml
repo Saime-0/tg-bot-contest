@@ -1,0 +1,46 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  DEPLOY_DIR: /home/${{ secrets.PROD_SSH_USERNAME }}/src/tgbotcontest
+
+jobs:
+
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: List installed packages
+        run: apt list --installed
+
+      - name: Set up SSH config
+        run: |
+          mkdir -p ~/.ssh
+          echo "Host Prod" >> ~/.ssh/config
+          echo "  HostName ${{ secrets.PROD_SSH_HOST }}" >> ~/.ssh/config
+          echo "  User ${{ secrets.PROD_SSH_USERNAME }}" >> ~/.ssh/config
+          echo "  IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
+      - name: Add SSH key
+        run: |
+          echo "${{ secrets.PROD_SSH_SSHKEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Rsync copy project
+        run: SSH_HOST=Prod DIR=${{ env.DEPLOY_DIR }}  ./scripts/rsync-project.sh
+
+      - name: SSH Remote Commands
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USERNAME }}
+          key: ${{ secrets.PROD_SSH_SSHKEY }}
+
+        script: neofetch
