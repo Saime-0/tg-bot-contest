@@ -81,7 +81,7 @@ jobs:
             cd ${{ env.DEPLOY_DIR }}
             if ! sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} "SELECT 1;" > /dev/null 2>&1; then
               sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} ""
-              MIGRATION_DIR=${{ secrets.PROD_MAIN_DATABASE_DIR }}/migrations/main DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} ./scripts/init-scheme.sh
+              MIGRATION_DIR=./migrations/main DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} ./scripts/init-scheme.sh
             fi
             > deploy/.env
             echo TOKEN=${{ secrets.PROD_BOT_TOKEN }} >> deploy/.env
