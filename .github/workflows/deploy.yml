@@ -17,41 +17,22 @@ permissions:
   # pull-requests: read
 
 jobs:
-  lint:
+  golangci:
+    name: lint
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go version
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install dependencies
-        run: go mod download
-
-      - name: Run golangci-lint
+      - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.62.0 # Specify the golangci-lint version, so we are stable
-          args: --timeout 10m # Increase the timeout to 10 minutes
-          skip-go-installation: true
-          skip-pkg-cache: true
+          version: v1.62.0
 
   deploy:
     runs-on: ubuntu-latest
-    needs: lint
+    needs: golangci
 
     steps:
       - name: Checkout code
