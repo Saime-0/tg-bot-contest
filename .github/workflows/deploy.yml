@@ -79,7 +79,7 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
             set -e
-            cd $${{ env.DEPLOY_DIR }}
+            cd ${{ env.DEPLOY_DIR }}
             touch deploy/.env
             echo TOKEN=${{ secrets.PROD_BOT_TOKEN }} >> deploy/.env
             echo MAIN_DATABASE_DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} >> deploy/.env
