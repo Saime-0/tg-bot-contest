@@ -64,7 +64,7 @@ jobs:
           script: |
             set -e
             [ ! -d ${{ env.DEPLOY_DIR }} ] && mkdir -p ${{ env.DEPLOY_DIR }}
-            sqlite --version
+            sqlite3 --version
             if ! sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} "SELECT 1;" > /dev/null 2>&1; then
               sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} ""
               DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} ./scripts/init-scheme.sh
