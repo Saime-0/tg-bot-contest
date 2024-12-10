@@ -5,7 +5,7 @@ services:
     logging:
       driver: journald
     volumes:
-      - ~/.local/share/contest-bot/main.db:/var/lib/tgbotcontest/main.db
+      - ~/.local/share/tgbotcontest/main.db:/var/lib/tgbotcontest/main.db
     build:
       context: ../
       dockerfile: ./deploy/Dockerfile
