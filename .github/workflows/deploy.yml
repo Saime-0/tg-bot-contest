@@ -45,6 +45,8 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    needs: lint
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -76,9 +78,9 @@ jobs:
           username: ${{ secrets.PROD_SSH_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
+            set -e
             cd $${{ env.DEPLOY_DIR }}
-            cat <<EOF > $${{ env.DEPLOY_DIR }}/.env  
-            TOKEN=${{ secrets.PROD_BOT_TOKEN }}
-            MAIN_DATABASE_DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }}
-            EOF
+            touch deploy/.env
+            echo TOKEN=${{ secrets.PROD_BOT_TOKEN }} >> deploy/.env
+            echo MAIN_DATABASE_DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} >> deploy/.env
             docker compose -f deploy/docker-compose.yml up --force-recreate --build -d tgbotcontest
