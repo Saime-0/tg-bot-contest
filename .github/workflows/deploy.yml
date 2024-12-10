@@ -63,14 +63,15 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
             set -e
-            sqlite --version
-            set +e
 #           Check and create the deployment directory if it not exist
             [ ! -d ${{ env.DEPLOY_DIR }} ] && mkdir -p ${{ env.DEPLOY_DIR }}
-#           Check if database exists; if not, create it
-            sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} "SELECT 1;" > /dev/null 2>&1 || sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} ""
-#           Apply migrations
-            DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} ./scripts/init-scheme.sh
+#           Check if database exists
+            sqlite --version
+            if ! sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} "SELECT 1;" > /dev/null 2>&1; then
+#             Create DB and init scheme
+              sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} ""
+              DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} ./scripts/init-scheme.sh
+            fi
 
       - name: Rsync copy project
         run: SSH_HOST=Prod DIR=${{ env.DEPLOY_DIR }}  ./scripts/rsync-project.sh
