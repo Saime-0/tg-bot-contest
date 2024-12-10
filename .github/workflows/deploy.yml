@@ -37,7 +37,9 @@ jobs:
         run: SSH_HOST=Prod DIR=${{ env.DEPLOY_DIR }}  ./scripts/rsync-project.sh
 
       - name: SSH Remote Commands
-        run: |
-          ssh Prod <<EOF
-          neofetch
-          EOF
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: neofetch
