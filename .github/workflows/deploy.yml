@@ -30,7 +30,7 @@ jobs:
 
       - name: Add SSH key
         run: |
-          echo "${{ secrets.PROD_SSH_SSHKEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
       - name: Rsync copy project
@@ -41,5 +41,5 @@ jobs:
         with:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USERNAME }}
-          key: ${{ secrets.PROD_SSH_SSHKEY }}
+          key: ${{ secrets.PROD_SSH_KEY }}
           script: neofetch
