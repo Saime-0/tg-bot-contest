@@ -73,20 +73,37 @@ jobs:
       - name: Rsync copy project
         run: SSH_HOST=Prod DIR=$PROJECT_DIR  ./scripts/rsync-project.sh
 
+  start_new_service:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: SSH start application
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+         host: ${{ secrets.SSH_HOST }}
+         username: ${{ secrets.SSH_USERNAME }}
+         key: ${{ secrets.SSH_KEY }}
+         script: |
+           set -e
+           cd $PROJECT_DIR
+           if ! sqlite3 $DB_FILE "SELECT 1;" > /dev/null 2>&1; then
+             sqlite3 $DB_FILE ""
+             MIGRATION_DIR=$PROJECT_DIR/migrations/main DSN=$DB_FILE ./scripts/init-scheme.sh
+           fi
+           > deploy/.env
+           echo TOKEN=${{ secrets.BOT_TOKEN }} >> deploy/.env
+           echo MAIN_DATABASE_DSN=$DOCKER_DB_DSN >> deploy/.env
+           docker compose -f deploy/docker-compose.yml up --force-recreate --build -d tgbotcontest
+
+  rollback_service:
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: start_new_service
+    steps:
       - name: SSH start application
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          script: |
-            set -e
-            cd $PROJECT_DIR
-            if ! sqlite3 $DB_FILE "SELECT 1;" > /dev/null 2>&1; then
-              sqlite3 $DB_FILE ""
-              MIGRATION_DIR=$PROJECT_DIR/migrations/main DSN=$DB_FILE ./scripts/init-scheme.sh
-            fi
-            > deploy/.env
-            echo TOKEN=${{ secrets.BOT_TOKEN }} >> deploy/.env
-            echo MAIN_DATABASE_DSN=$DOCKER_DB_DSN >> deploy/.env
-            docker compose -f deploy/docker-compose.yml up --force-recreate --build -d tgbotcontest
+          script: docker start tgbotcontest
