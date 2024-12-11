@@ -1,5 +1,6 @@
 services:
   tgbotcontest:
+    container_name: ${CONTAINER_NAME:-tgbotcontest}
     env_file: .env
     restart: unless-stopped
     logging:
@@ -9,4 +10,3 @@ services:
     build:
       context: ../
       dockerfile: ./deploy/Dockerfile
-    container_name: tgbotcontest
