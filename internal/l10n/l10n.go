@@ -14,7 +14,7 @@ const (
 	ReactErrorPrefix           = "Ошибка! "
 	ReactErrorSuffix           = "🫠" // emoji
 	ContestStopNotFound        = "в этом чате нечего останавливать"
-	ChatTakeNotFound           = "чат не найден (тест)"
+	ChatTakeNotFound           = "чат не найден"
 	ContestStopUsage           = "Пример:\n/contestStop @exampleChatUsername"
 	CreateContestNoAdminRights = "требуются права администратора"
 	ContestConfigRunSuccess    = "Конкурс запущен🎉"    // emoji
