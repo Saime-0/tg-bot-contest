@@ -9,9 +9,8 @@ on:
 env:
   PROJECT_DIR: /home/${{ secrets.SSH_USERNAME }}/src/tgbotcontest
   DB_DIR: /home/${{ secrets.SSH_USERNAME }}/.local/share/tgbotcontest
-  DB_FILE: ${{ env.DB_DIR }}/main.db
+  DB_FILE_NAME: main.db
   DOCKER_DB_DSN: file:/var/lib/tgbotcontest/main.db?cache=shared
-
 
 permissions:
   contents: read
@@ -38,13 +37,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: print env
-        run: |
-          echo $PROJECT_DIR
-          echo $DB_DIR
-          echo $DB_FILE
-          echo $DOCKER_DB_DSN
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -88,6 +80,7 @@ jobs:
          username: ${{ secrets.SSH_USERNAME }}
          key: ${{ secrets.SSH_KEY }}
          script: |
+           DB_FILE=$DB_DIR/$DB_FILE_NAME
            set -e
            cd $PROJECT_DIR
            if ! sqlite3 $DB_FILE "SELECT 1;" > /dev/null 2>&1; then
