@@ -8,4 +8,4 @@ rsync -avzrP --include='cmd/***' \
           --include='go.mod' \
           --include='go.sum' \
           --exclude='*' \
-          . "${SSH_HOST}":"${DIR}"
+          . ${SSH_HOST}:${DIR}
