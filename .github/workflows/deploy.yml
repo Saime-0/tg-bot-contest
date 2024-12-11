@@ -63,7 +63,7 @@ jobs:
             sqlite3 --version
 
       - name: Rsync copy project
-        run: SSH_HOST=Prod DIR="~/$PROJECT_DIR" ./scripts/rsync-project.sh
+        run: SSH_HOST=Prod DIR="$PROJECT_DIR" ./scripts/rsync-project.sh
 
   start_new_service:
     runs-on: ubuntu-latest
