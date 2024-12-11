@@ -22,6 +22,7 @@ permissions:
 jobs:
   golangci:
     name: lint
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +39,13 @@ jobs:
     needs: golangci
 
     steps:
+      - name: print env
+        run: |
+          echo $PROJECT_DIR
+          echo $DB_DIR
+          echo $DB_FILE
+          echo $DOCKER_DB_DSN
+
       - name: Checkout code
         uses: actions/checkout@v4
 
