@@ -9,7 +9,7 @@ on:
 env:
   PROJECT_DIR: /home/${{ secrets.SSH_USERNAME }}/src/tgbotcontest
   DB_DIR: /home/${{ secrets.SSH_USERNAME }}/.local/share/tgbotcontest
-  DB_FILE: $DB_DIR/main.db
+  DB_FILE: ${{ env.DB_DIR }}/main.db
   DOCKER_DB_DSN: file:/var/lib/tgbotcontest/main.db?cache=shared
 
 
