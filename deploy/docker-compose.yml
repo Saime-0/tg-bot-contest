@@ -10,3 +10,13 @@ services:
     build:
       context: ../
       dockerfile: ./deploy/Dockerfile
+
+  tgbotcontest-dev:
+    container_name: ${CONTAINER_NAME:-tbc-dev}
+    env_file: .env
+    restart: unless-stopped
+    volumes:
+      - ${DB_DIR}:/var/lib/tgbotcontest
+    build:
+      context: ../
+      dockerfile: ./deploy/Dockerfile
