@@ -72,7 +72,7 @@ jobs:
       - name: SSH start application
         uses: appleboy/ssh-action@v1.2.0
         env:
-          DB_FILE: ~/.local/share/tgbotcontest/main.db
+          DB_DIR: ~/.local/share/tgbotcontest
           DOCKER_DB_DSN: file:/var/lib/tgbotcontest/main.db?cache=shared
         with:
          host: ${{ secrets.SSH_HOST }}
@@ -83,7 +83,7 @@ jobs:
            cd ${{ env.PROJECT_DIR }}
            echo TOKEN=${{ secrets.BOT_TOKEN }} > deploy/.env
            echo MAIN_DATABASE_DSN=${{ env.DOCKER_DB_DSN }} >> deploy/.env
-           DB_FILE=${{ env.DB_FILE }} docker compose -f deploy/docker-compose.yml up --force-recreate --build -d tgbotcontest
+           DB_DIR=${{ env.DB_DIR }} docker compose -f deploy/docker-compose.yml up --force-recreate --build -d tgbotcontest
 
   rollback_service:
     runs-on: ubuntu-latest
