@@ -87,9 +87,9 @@ jobs:
              sqlite3 $DB_FILE ""
              MIGRATION_DIR=$PROJECT_DIR/migrations/main DSN=$DB_FILE ./scripts/init-scheme.sh
            fi
-           > deploy/.env
-           echo TOKEN=${{ secrets.BOT_TOKEN }} >> deploy/.env
-           echo MAIN_DATABASE_DSN=$DOCKER_DB_DSN >> deploy/.env
+           echo "" > ./deploy/.env
+           echo TOKEN=${{ secrets.BOT_TOKEN }} >> ./deploy/.env
+           echo MAIN_DATABASE_DSN=$DOCKER_DB_DSN >> ./deploy/.env
            docker compose -f deploy/docker-compose.yml up --force-recreate --build -d tgbotcontest
 
   rollback_service:
