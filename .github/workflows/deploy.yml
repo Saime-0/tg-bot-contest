@@ -62,8 +62,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            [ ! -d $PROJECT_DIR ] && mkdir -p $PROJECT_DIR
-            [ ! -d $DB_DIR ] && mkdir -p $DB_DIR
+            [ ! -d ~/$PROJECT_DIR ] && mkdir -p ~/$PROJECT_DIR
+            [ ! -d ~/$DB_DIR ] && mkdir -p ~/$DB_DIR
             sqlite3 --version
 
       - name: Rsync copy project
