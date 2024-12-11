@@ -36,7 +36,6 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: golangci
 
     steps:
       - name: print env
