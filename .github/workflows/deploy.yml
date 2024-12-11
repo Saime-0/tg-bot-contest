@@ -7,8 +7,8 @@ on:
       - master
 
 env:
-  PROJECT_DIR: /home/${{ secrets.SSH_USERNAME }}/src/tgbotcontest
-  DB_DIR: /home/${{ secrets.SSH_USERNAME }}/.local/share/tgbotcontest
+  PROJECT_DIR: ~/src/tgbotcontest
+  DB_DIR: ~/.local/share/tgbotcontest
   DB_FILE_NAME: main.db
   DOCKER_DB_DSN: file:/var/lib/tgbotcontest/main.db?cache=shared
 
@@ -67,7 +67,7 @@ jobs:
             sqlite3 --version
 
       - name: Rsync copy project
-        run: SSH_HOST=Prod DIR=$PROJECT_DIR  ./scripts/rsync-project.sh
+        run: SSH_HOST=Prod DIR=$PROJECT_DIR ./scripts/rsync-project.sh
 
   start_new_service:
     runs-on: ubuntu-latest
