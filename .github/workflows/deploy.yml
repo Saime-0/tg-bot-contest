@@ -80,7 +80,7 @@ jobs:
          username: ${{ secrets.SSH_USERNAME }}
          key: ${{ secrets.SSH_KEY }}
          script: |
-           echo DB_FILE=$DB_DIR}/$DB_FILE_NAME >> $GITHUB_ENV 
+           echo "DB_FILE=${DB_DIR}/${DB_FILE_NAME}" >> $GITHUB_ENV 
            set -e
            cd $PROJECT_DIR
            if ! sqlite3 $DB_FILE "SELECT 1;" > /dev/null 2>&1; then
