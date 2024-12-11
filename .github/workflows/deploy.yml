@@ -41,14 +41,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Add SSH key
-        run: |
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
       - name: Set up SSH config
         run: |
           mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
           cat <<EOF >> ~/.ssh/config
           Host Prod
             HostName ${{ secrets.SSH_HOST }}
@@ -57,7 +54,6 @@ jobs:
             StrictHostKeyChecking no
           EOF
           chmod 600 ~/.ssh/config
-
 
       - name: SSH create dirs check sqlite3
         uses: appleboy/ssh-action@v1.2.0
