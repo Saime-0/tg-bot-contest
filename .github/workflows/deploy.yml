@@ -7,7 +7,11 @@ on:
       - master
 
 env:
-  DEPLOY_DIR: /home/${{ secrets.PROD_SSH_USERNAME }}/src/tgbotcontest
+  PROJECT_DIR: /home/${{ secrets.SSH_USERNAME }}/src/tgbotcontest
+  DB_DIR: /home/${{ secrets.SSH_USERNAME }}/.local/share/tgbotcontest
+  DB_FILE: $DB_DIR/main.db
+  DB_DSN: file:$DB_FILE?cache=shared
+
 
 permissions:
   contents: read
@@ -42,8 +46,8 @@ jobs:
           mkdir -p ~/.ssh
           cat <<EOF >> ~/.ssh/config
           Host Prod
-            HostName ${{ secrets.PROD_SSH_HOST }}
-            User ${{ secrets.PROD_SSH_USERNAME }}
+            HostName ${{ secrets.SSH_HOST }}
+            User ${{ secrets.SSH_USERNAME }}
             IdentityFile ~/.ssh/id_rsa
             StrictHostKeyChecking no
           EOF
@@ -51,38 +55,38 @@ jobs:
 
       - name: Add SSH key
         run: |
-          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
       - name: SSH create dirs check sqlite3
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.PROD_SSH_HOST }}
-          username: ${{ secrets.PROD_SSH_USERNAME }}
-          key: ${{ secrets.PROD_SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            [ ! -d ${{ env.DEPLOY_DIR }} ] && mkdir -p ${{ env.DEPLOY_DIR }}
-            [ ! -d ${{ secrets.PROD_MAIN_DATABASE_DIR }} ] && mkdir -p ${{ secrets.PROD_MAIN_DATABASE_DIR }}
+            [ ! -d $PROJECT_DIR ] && mkdir -p $PROJECT_DIR
+            [ ! -d $DB_DIR ] && mkdir -p $DB_DIR
             sqlite3 --version
 
       - name: Rsync copy project
-        run: SSH_HOST=Prod DIR=${{ env.DEPLOY_DIR }}  ./scripts/rsync-project.sh
+        run: SSH_HOST=Prod DIR=$PROJECT_DIR  ./scripts/rsync-project.sh
 
       - name: SSH start application
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.PROD_SSH_HOST }}
-          username: ${{ secrets.PROD_SSH_USERNAME }}
-          key: ${{ secrets.PROD_SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            cd ${{ env.DEPLOY_DIR }}
-            if ! sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} "SELECT 1;" > /dev/null 2>&1; then
-              sqlite3 ${{ secrets.PROD_MAIN_DATABASE_DSN }} ""
-              MIGRATION_DIR=./migrations/main DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} ./scripts/init-scheme.sh
+            cd $PROJECT_DIR
+            if ! sqlite3 $DB_FILE "SELECT 1;" > /dev/null 2>&1; then
+              sqlite3 $DB_FILE ""
+              MIGRATION_DIR=./migrations/main DSN=$DB_DSN ./scripts/init-scheme.sh
             fi
             > deploy/.env
-            echo TOKEN=${{ secrets.PROD_BOT_TOKEN }} >> deploy/.env
-            echo MAIN_DATABASE_DSN=${{ secrets.PROD_MAIN_DATABASE_DSN }} >> deploy/.env
+            echo TOKEN=${{ secrets.BOT_TOKEN }} >> deploy/.env
+            echo MAIN_DATABASE_DSN=$DB_DSN >> deploy/.env
             docker compose -f deploy/docker-compose.yml up --force-recreate --build -d tgbotcontest
