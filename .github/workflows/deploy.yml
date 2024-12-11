@@ -7,8 +7,8 @@ on:
       - master
 
 env:
-  PROJECT_DIR: ~/src/tgbotcontest
-  DB_DIR: ~/.local/share/tgbotcontest
+  PROJECT_DIR: src/tgbotcontest
+  DB_DIR: .local/share/tgbotcontest
   DB_FILE_NAME: main.db
   DOCKER_DB_DSN: file:/var/lib/tgbotcontest/main.db?cache=shared
 
@@ -81,10 +81,10 @@ jobs:
          key: ${{ secrets.SSH_KEY }}
          script: |
            set -e
-           echo "" > $PROJECT_DIR/deploy/.env
-           echo TOKEN=${{ secrets.BOT_TOKEN }} >> $PROJECT_DIR/deploy/.env
+           echo "" > ~/$PROJECT_DIR/deploy/.env
+           echo TOKEN=${{ secrets.BOT_TOKEN }} >> ~/$PROJECT_DIR/deploy/.env
            echo MAIN_DATABASE_DSN=$DOCKER_DB_DSN >> ./deploy/.env
-           docker compose -f $PROJECT_DIR/deploy/docker-compose.yml up --force-recreate --build -d tgbotcontest
+           docker compose -f ~/$PROJECT_DIR/deploy/docker-compose.yml up --force-recreate --build -d tgbotcontest
 
   rollback_service:
     runs-on: ubuntu-latest
