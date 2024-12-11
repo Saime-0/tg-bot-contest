@@ -80,13 +80,15 @@ jobs:
          username: ${{ secrets.SSH_USERNAME }}
          key: ${{ secrets.SSH_KEY }}
          script: |
-           echo "DB_FILE=${DB_DIR}/${DB_FILE_NAME}" >> $GITHUB_ENV 
+           DB_FILE="${DB_DIR}/${DB_FILE_NAME}"
            set -e
            cd $PROJECT_DIR
            if ! sqlite3 $DB_FILE "SELECT 1;" > /dev/null 2>&1; then
              sqlite3 $DB_FILE ""
              MIGRATION_DIR=$PROJECT_DIR/migrations/main DSN=$DB_FILE ./scripts/init-scheme.sh
            fi
+           pwd
+           echo $(pwd)/deploy/.env
            echo "" > ./deploy/.env
            echo TOKEN=${{ secrets.BOT_TOKEN }} >> ./deploy/.env
            echo MAIN_DATABASE_DSN=$DOCKER_DB_DSN >> ./deploy/.env
