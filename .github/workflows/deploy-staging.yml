@@ -1,6 +1,10 @@
 name: staging
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
 
 env:
   PROJECT_DIR: ~/src/staging/tgbotcontest
