@@ -1,5 +1,13 @@
 # tg-bot-contest
 
+### ci
+
+[![prod](https://github.com/Saime-0/tg-bot-contest/actions/workflows/deploy-prod.yml/badge.svg)](https://github.com/Saime-0/tg-bot-contest/actions/workflows/deploy-prod.yml)
+
+[![staging](https://github.com/Saime-0/tg-bot-contest/actions/workflows/deploy-staging.yml/badge.svg)](https://github.com/Saime-0/tg-bot-contest/actions/workflows/deploy-staging.yml)
+
+### about
+
 Перед первым деплоем необходимо:
 
 - Установить `docker`, `sqlite`, `rsync`
