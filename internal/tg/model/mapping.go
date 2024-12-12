@@ -18,7 +18,7 @@ func UserDomain(tgUser gotgbot.User) model.User {
 func ChatDomain(tgChat gotgbot.Chat) model.Chat {
 	return model.Chat{
 		ID:       int(tgChat.Id),
-		Title:    tgChat.FirstName,
+		Title:    tgChat.Title,
 		Username: tgChat.Username,
 	}
 }

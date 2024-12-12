@@ -53,6 +53,7 @@ func (p Params) Run() (Out, error) {
 			and ended_at is null
 	`, p.Chat.ID, p.TopicID)
 	if errors.Is(err, sql.ErrNoRows) {
+		err = nil // обнулить ошибку, чтобы транзакция не откатилась
 		return Out{}, nil
 	} else if err != nil {
 		return Out{}, err
