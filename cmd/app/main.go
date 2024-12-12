@@ -24,6 +24,8 @@ func main() {
 		log.Fatal("MAIN_DATABASE_DSN environment variable is empty")
 	}
 
+	slog.SetLogLoggerLevel(slog.LevelDebug)
+
 	// Создаем контекст для graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

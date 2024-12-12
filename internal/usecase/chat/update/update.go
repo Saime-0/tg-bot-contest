@@ -6,26 +6,16 @@ import (
 	"github.com/Saime-0/tg-bot-contest/internal/model"
 )
 
-type Params struct {
-	TXDB txOrDB
-
-	Chat model.Chat
-}
-
-func (p *Params) Run() error {
-	_, err := p.TXDB.NamedExec(`
+func Run(txdb txOrDB, chat model.Chat) error {
+	_, err := txdb.NamedExec(`
 		insert into chats (id, title, username)
 		values (:id, :title, :username)
 		on conflict (id) do update set 
 		   title = excluded.title,
 		   username = excluded.username
-    `, p.Chat)
+    `, chat)
 
 	return err
-}
-
-func Run(db txOrDB, chat model.Chat) error {
-	return (&Params{TXDB: db, Chat: chat}).Run()
 }
 
 type txOrDB interface {

@@ -1,6 +1,7 @@
 package updatesController
 
 import (
+	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
@@ -12,17 +13,19 @@ import (
 
 	"github.com/Saime-0/tg-bot-contest/internal/l10n"
 	"github.com/Saime-0/tg-bot-contest/internal/model"
-	model2 "github.com/Saime-0/tg-bot-contest/internal/tg/model"
+	tgModel "github.com/Saime-0/tg-bot-contest/internal/tg/model"
 	"github.com/Saime-0/tg-bot-contest/internal/ue"
 	chatTake "github.com/Saime-0/tg-bot-contest/internal/usecase/chat/take"
-	compCreate "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/create"
+	chatUpdate "github.com/Saime-0/tg-bot-contest/internal/usecase/chat/update"
+	contestCreate "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/create"
 	contestStop "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/stop"
 	memberStatusUpdate "github.com/Saime-0/tg-bot-contest/internal/usecase/member/statusUpdate"
 	messageCreated "github.com/Saime-0/tg-bot-contest/internal/usecase/message/created"
 )
 
 type Controller struct {
-	DB *sqlx.DB
+	DB  *sqlx.DB
+	Bot *gotgbot.Bot
 }
 
 func onlyInPrivateChat(fn func(b *gotgbot.Bot, ctx *ext.Context) error) func(b *gotgbot.Bot, ctx *ext.Context) error {
@@ -40,6 +43,8 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	handlerGroup := []ext.Handler{
 		handlers.NewCommand("contestConfigRun", onlyInPrivateChat(c.modulation(contestConfigRun))),
 		handlers.NewCommand("contestStop", onlyInPrivateChat(c.modulation(contestStopHandler))),
+		handlers.NewMessage(c.inviteBotFilter, c.modulation(inviteBotMessage)),
+		handlers.NewMessage(c.leftBotFilter, c.modulation(leftBotMessage)),
 		handlers.NewMessage(nil, c.modulation(newMessage)),
 		handlers.NewChatMember(nil, c.modulation(newChatMember)),
 	}
@@ -49,6 +54,36 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	}
 
 	return nil
+}
+
+func leftBotMessage(r Request) error {
+	chat := tgModel.ChatDomain(r.ctx.Message.Chat)
+	if err := chatUpdate.Run(r.DB, chat); err != nil {
+		slog.Warn("leftBotMessage: chatUpdate.Run: " + err.Error())
+	}
+
+	if err := InTransaction(r.DB, func(tx *sqlx.Tx) error {
+		return (&contestStop.Params{TX: tx, ChatID: chat.ID}).Run()
+	}); err != nil {
+		slog.Debug("leftBotMessage: " + err.Error())
+	}
+
+	return nil
+}
+
+func inviteBotMessage(r Request) error {
+	chat := tgModel.ChatDomain(r.ctx.Message.Chat)
+	return chatUpdate.Run(r.DB, chat)
+}
+
+func (c *Controller) inviteBotFilter(msg *gotgbot.Message) bool {
+	for _, member := range msg.NewChatMembers {
+		if member.Id == c.Bot.Id {
+			return true
+		}
+	}
+
+	return false
 }
 
 type Request struct {
@@ -67,6 +102,10 @@ func (c *Controller) modulation(fn func(request Request) error) func(b *gotgbot.
 	}
 }
 
+func (c *Controller) leftBotFilter(msg *gotgbot.Message) bool {
+	return msg.LeftChatMember.Id == c.Bot.Id
+}
+
 func contestConfigRun(r Request) error {
 	// Разобрать сообщение конфига на параметры
 	lines := strings.Split(r.ctx.Message.GetText(), "\n")
@@ -79,7 +118,7 @@ func contestConfigRun(r Request) error {
 	}
 
 	// Параметры для создания конкурса
-	params := compCreate.Params{
+	params := contestCreate.Params{
 		TX:        nil,
 		Keyword:   kv[l10n.CfgKeyword],
 		CreatorID: int(r.ctx.EffectiveSender.Id()),
@@ -120,6 +159,11 @@ func contestConfigRun(r Request) error {
 }
 
 func newMessage(r Request) (err error) {
+	chat := tgModel.ChatDomain(r.ctx.Message.Chat)
+	if err = chatUpdate.Run(r.DB, chat); err != nil {
+		slog.Warn("newMessage: chatUpdate.Run: " + err.Error())
+	}
+
 	msg := r.ctx.Message
 	if (msg.Chat.Type != gotgbot.ChatTypeSupergroup && msg.Chat.Type != gotgbot.ChatTypeGroup) ||
 		!msg.GetSender().IsUser() ||
@@ -135,8 +179,8 @@ func newMessage(r Request) (err error) {
 	var messageCreatedOut messageCreated.Out
 	if messageCreatedOut, err = (&messageCreated.Params{
 		DB:      r.DB,
-		Chat:    model2.ChatDomain(msg.Chat),
-		User:    model2.UserDomain(*msg.From),
+		Chat:    tgModel.ChatDomain(msg.Chat),
+		User:    tgModel.UserDomain(*msg.From),
 		Text:    msg.GetText(),
 		TopicID: topicID,
 	}).Run(); err != nil {
@@ -208,12 +252,12 @@ func (r Request) checkAdminRights(chatID int64) error {
 }
 
 func defineMemberStatus(old, new string) uint {
-	oldStatus := model2.MemberStatusID[old]
-	newStatus := model2.MemberStatusID[new]
+	oldStatus := tgModel.MemberStatusID[old]
+	newStatus := tgModel.MemberStatusID[new]
 	switch {
-	case slices.Contains(model2.AlienStatus, oldStatus) && slices.Contains(model2.ParticipantStatus, newStatus):
+	case slices.Contains(tgModel.AlienStatus, oldStatus) && slices.Contains(tgModel.ParticipantStatus, newStatus):
 		return model.MemberStatusJoin
-	case slices.Contains(model2.ParticipantStatus, oldStatus) && slices.Contains(model2.AlienStatus, newStatus):
+	case slices.Contains(tgModel.ParticipantStatus, oldStatus) && slices.Contains(tgModel.AlienStatus, newStatus):
 		return model.MemberStatusLeave
 	default:
 		return 0
@@ -221,6 +265,11 @@ func defineMemberStatus(old, new string) uint {
 }
 
 func newChatMember(r Request) error {
+	chat := tgModel.ChatDomain(r.ctx.Message.Chat)
+	if err := chatUpdate.Run(r.DB, chat); err != nil {
+		slog.Warn("newChatMember: chatUpdate.Run: " + err.Error())
+	}
+
 	oldStatus := r.ctx.ChatMember.OldChatMember.GetStatus()
 	newStatus := r.ctx.ChatMember.NewChatMember.GetStatus()
 
@@ -236,10 +285,10 @@ func newChatMember(r Request) error {
 
 	memberStatusUpdateParams := &memberStatusUpdate.Params{
 		TX:           nil,
-		Chat:         model2.ChatDomain(r.ctx.ChatMember.Chat),
+		Chat:         tgModel.ChatDomain(r.ctx.ChatMember.Chat),
 		MemberStatus: memberStatus,
-		Participant:  model2.UserDomain(participant),
-		Initiator:    model2.UserDomain(initiator),
+		Participant:  tgModel.UserDomain(participant),
+		Initiator:    tgModel.UserDomain(initiator),
 		ViaLink:      viaLink,
 	}
 
