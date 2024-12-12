@@ -132,7 +132,12 @@ func contestConfigRun(r Request) error {
 		}))
 	} else if chatID != 0 {
 		params.ChatID = int(chatID)
+	} else if chatUsername == "" {
+		return right(r.ctx.Message.Reply(r.Bot, l10n.ContestConfigRunUsage, &gotgbot.SendMessageOpts{
+			ParseMode: gotgbot.ParseModeMarkdownV2,
+		}))
 	}
+
 	if params.ChatID == 0 {
 		// Найти чат
 		if chat, err := chatTake.Run(r.DB, chatUsername); err != nil {
