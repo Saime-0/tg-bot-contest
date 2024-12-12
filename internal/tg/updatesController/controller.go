@@ -117,6 +117,8 @@ func contestConfigRun(r Request) error {
 		}
 	}
 
+	chatUsername := clearAt(kv[l10n.CfgChatUsername])
+
 	// Параметры для создания конкурса
 	params := contestCreate.Params{
 		TX:        nil,
@@ -124,11 +126,20 @@ func contestConfigRun(r Request) error {
 		CreatorID: int(r.ctx.EffectiveSender.Id()),
 	}
 
-	// Найти чат
-	if chat, err := chatTake.Run(r.DB, clearAt(kv[l10n.CfgChatUsername])); err != nil {
-		return r.reactError(err)
-	} else {
-		params.ChatID = chat.ID
+	if chatID, err := strconv.ParseInt(kv[l10n.CfgChatID], 10, 64); err != nil && kv[l10n.CfgChatID] != "" {
+		return right(r.ctx.Message.Reply(r.Bot, l10n.ContestConfigRunUsage, &gotgbot.SendMessageOpts{
+			ParseMode: gotgbot.ParseModeMarkdownV2,
+		}))
+	} else if chatID != 0 {
+		params.ChatID = int(chatID)
+	}
+	if params.ChatID == 0 {
+		// Найти чат
+		if chat, err := chatTake.Run(r.DB, chatUsername); err != nil {
+			return r.reactError(err)
+		} else {
+			params.ChatID = chat.ID
+		}
 	}
 
 	// Проверить наличие прав админа в чате
@@ -137,13 +148,17 @@ func contestConfigRun(r Request) error {
 	}
 
 	if multiplicity, err := strconv.ParseInt(kv[l10n.CfgMultiplicity], 10, 64); err != nil {
-		return right(r.ctx.Message.Reply(r.Bot, l10n.ContestConfigRunUsage, nil))
+		return right(r.ctx.Message.Reply(r.Bot, l10n.ContestConfigRunUsage, &gotgbot.SendMessageOpts{
+			ParseMode: gotgbot.ParseModeMarkdownV2,
+		}))
 	} else {
 		params.Multiplicity = int(multiplicity)
 	}
 
 	if topicID, err := strconv.ParseInt(kv[l10n.CfgTopic], 10, 64); err != nil {
-		return right(r.ctx.Message.Reply(r.Bot, l10n.ContestConfigRunUsage, nil))
+		return right(r.ctx.Message.Reply(r.Bot, l10n.ContestConfigRunUsage, &gotgbot.SendMessageOpts{
+			ParseMode: gotgbot.ParseModeMarkdownV2,
+		}))
 	} else {
 		params.TopicID = int(topicID)
 	}

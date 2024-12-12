@@ -14,27 +14,6 @@ type Client struct {
 	Updater    *ext.Updater
 }
 
-func Run(token string, regHand registerHandlers) (_ *Client, err error) {
-	client := &Client{}
-
-	if client.Bot, err = NewBot(token); err != nil {
-		return nil, fmt.Errorf("can't create bot: %w", err)
-	}
-
-	client.Dispatcher = NewDispatcher()
-	if err = regHand.AddHandlers(client.Dispatcher); err != nil {
-		return nil, fmt.Errorf("can't register updatesController: %w", err)
-	}
-
-	client.Updater = ext.NewUpdater(client.Dispatcher, nil)
-
-	if err = StartPolling(client.Updater, client.Bot); err != nil {
-		return nil, err
-	}
-
-	return client, nil
-}
-
 func NewBot(token string) (*gotgbot.Bot, error) {
 	bot, err := gotgbot.NewBot(token, &gotgbot.BotOpts{
 		BotClient: newLoggingClient(),
@@ -44,10 +23,6 @@ func NewBot(token string) (*gotgbot.Bot, error) {
 	}
 
 	return bot, nil
-}
-
-type registerHandlers interface {
-	AddHandlers(*ext.Dispatcher) error
 }
 
 func NewDispatcher() *ext.Dispatcher {
