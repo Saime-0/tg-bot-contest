@@ -151,6 +151,11 @@ func contestConfigRun(r Request) (err error) {
 		return r.reactError(err)
 	}
 
+	// Проверить доступность писать в чат
+	if err = checkChatAvailability(r, params.ChatID, params.TopicID); err != nil {
+		return r.reactError(err)
+	}
+
 	if err := InTransaction(r.DB, func(tx *sqlx.Tx) error {
 		params.TX = tx
 		return params.Run()
@@ -159,6 +164,20 @@ func contestConfigRun(r Request) (err error) {
 	}
 
 	return right(fastReply(r, l10n.ContestConfigRunSuccess))
+}
+
+func checkChatAvailability(r Request, chatID, topicID int) error {
+	pingMsg, err := r.Bot.SendMessage(int64(chatID), "ping", &gotgbot.SendMessageOpts{
+		MessageThreadId: int64(topicID),
+	})
+	if err != nil {
+		return r.reactError(ue.New(l10n.ContestConfigBotCannotSendMsg))
+	}
+	if _, err = pingMsg.Delete(r.Bot, nil); err != nil {
+		slog.Warn("contestConfigRun: pingMsg.Delete: " + err.Error())
+	}
+
+	return nil
 }
 
 func getIntParameter(kv map[string]string, name string, isRequired bool, defaultValue int) (int, error) {
