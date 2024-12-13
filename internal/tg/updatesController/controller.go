@@ -201,22 +201,12 @@ func getIntParameter(kv map[string]string, name string, isRequired bool, default
 	return int(val), nil
 }
 
-func getStrParameter(kv map[string]string, name string, isRequired bool, defaultValue string) (string, error) {
-	if kv[name] == "" {
-		if isRequired {
-			return "", ue.New(l10n.ParameterNotProvided + ": " + name)
-		}
-		return defaultValue, nil
-	}
-
-	return kv[name], nil
-}
-
 func fastMDReply(r Request, msg string) (*gotgbot.Message, error) {
 	return r.ctx.Message.Reply(r.Bot, msg, &gotgbot.SendMessageOpts{
 		ParseMode: gotgbot.ParseModeMarkdownV2,
 	})
 }
+
 func fastReply(r Request, msg string) (*gotgbot.Message, error) {
 	return r.ctx.Message.Reply(r.Bot, msg, nil)
 }
