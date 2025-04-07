@@ -53,34 +53,45 @@ ssh $ssh_host "DSN=file:$database_dir/$database_filename $src_dir/scripts/init-s
 
 # Создать образ
 image_base_name="${app_prefix}-tg-contest-bot"
-new_image_name="${image_base_name}-$version"
+new_image_name="${image_base_name}"
 image_script="$src_dir/deploy/Dockerfile"
-ssh $ssh_host "podman build --tag $new_image_name -f $image_script $src_dir"
+ssh $ssh_host "podman build --tag $new_image_name:$version -f $image_script $src_dir"
 
-previous_container_name=$(ssh $ssh_host "podman ps -q --filter \"name=${image_base_name}-\")" 2>/dev/null)
-
-# Остановить прошлый контейнер
-if [ -n "$previous_container_name" ]; then
-  ssh $ssh_host "podman stop $previous_container_name"
+echo "Поиск прошлого контейнера ..."
+previous_container_id=$(ssh $ssh_host "podman ps -q --no-trunc --format \{\{.ID\}\} --filter \"name=${image_base_name}\"")
+if [ -n "$previous_container_id" ]; then
+  previous_container_name=$(ssh $ssh_host "podman ps -q --format \{\{.Names\}\} --filter \"id=${previous_container_id}\"")
+  echo "Найден прошлый контейнер с ID $previous_container_id и именем $previous_container_name"
+  ssh $ssh_host "podman stop $previous_container_id" # Остановить прошлый контейнер
+  echo "Прошлый контейнер остановлен"
+else
+  echo "Прошлых контейнеров нет"
 fi
 
 # Если произойдет ошибка, работа скрипта будет продолжена
 set +e
 
 # Запустить новый контейнер
+echo "Запуск нового контейнера ..."
 new_container_name=${new_image_name}_$(date +"%Y%m%d_%H%M%S")
 db_dsn="file:/var/lib/tg-contest-bot/$database_filename"
-ssh $ssh_host "podman run --name $new_container_name \
-  --replace
+ssh $ssh_host "podman run --name "$new_container_name" \
+  --cpus=0.4 \
+  --memory=256m \
+  --replace \
+  --detach \
   -e TOKEN=$TOKEN \
   -e MAIN_DATABASE_DSN=$db_dsn \
   --restart unless-stopped \
   --log-driver=journald \
   -v $release_dir:/var/lib/tg-contest-bot \
-  $new_image_name"
+  $new_image_name:$version"
 
 if [ $? -eq 0 ]; then
-  ssh $ssh_host "podman rm $previous_container_name"
+  if [ -n "$previous_container_id" ]; then
+    echo "Удаление контейнера ID $previous_container_id"
+    ssh $ssh_host "podman rm $previous_container_id"
+  fi
   echo ""
   echo "====================================="
   echo "Запущен контейнер новый контейнер с приложением."
@@ -89,6 +100,7 @@ if [ $? -eq 0 ]; then
   echo "Версия приложения: $version"
   echo "Префикс приложения: $app_prefix"
   echo "Прошлый остановленный и удаленный контейнер: ${previous_container_name:-Нет}"
+  echo "Прошлый остановленный и удаленный контейнер: ${previous_container_id:-Нет}"
   echo "====================================="
   exit 0;
 else
@@ -102,9 +114,9 @@ fi
 set -e
 
 # Запустить прошлый контейнер, если запуск нового завершился с ошибкой
-if [ -n "$previous_container_name" ]; then
+if [ -n "$previous_container_id" ]; then
   echo "Начат запуск прошлого контейнера"
-  ssh "$ssh_host" "podman start $previous_container_name"
+  ssh "$ssh_host" "podman start $previous_container_id"
   echo "Прошлый контейнер успешно запущен"
 fi
 
