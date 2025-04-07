@@ -55,7 +55,7 @@ ssh $ssh_host "DSN=file:$database_dir/$database_filename $src_dir/scripts/init-s
 image_base_name="${app_prefix}-tg-contest-bot"
 new_image_name="${image_base_name}"
 image_script="$src_dir/deploy/Dockerfile"
-ssh $ssh_host "cpulimit -l 70 -- podman build --tag $new_image_name:$version -f $image_script $src_dir"
+ssh $ssh_host "podman build --tag $new_image_name:$version -f $image_script $src_dir"
 
 echo "Поиск прошлого контейнера ..."
 previous_container_id=$(ssh $ssh_host "podman ps -q --no-trunc --format \{\{.ID\}\} --filter \"name=${image_base_name}\"")
