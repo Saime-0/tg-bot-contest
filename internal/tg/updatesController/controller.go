@@ -167,7 +167,7 @@ func contestConfigRun(r Request) (err error) {
 }
 
 func checkChatAvailability(r Request, chatID, topicID int) error {
-	pingMsg, err := r.Bot.SendMessage(int64(chatID), "ping", &gotgbot.SendMessageOpts{
+	pingMsg, err := r.SendMessage(int64(chatID), "ping", &gotgbot.SendMessageOpts{
 		MessageThreadId: int64(topicID),
 	})
 	if err != nil {
