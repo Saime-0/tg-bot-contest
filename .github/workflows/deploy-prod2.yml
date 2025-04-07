@@ -1,0 +1,58 @@
+name: prod
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Версия приложения'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.62.0
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: golangci
+    environment: ProductionServer2
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH config
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id
+          chmod 600 ~/.ssh/id
+          cat <<EOF >> ~/.ssh/config
+          Host Prod
+            HostName ${{ secrets.SSH_HOST }}
+            User ${{ secrets.SSH_USERNAME }}
+            Port ${{ secrets.SSH_PORT }}
+            IdentityFile ~/.ssh/id
+            StrictHostKeyChecking no
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Deploy
+        run: |
+          SSH_HOST=Prod \
+          VERSION=${{ inputs.version }} \
+          APP_PREFIX=prod \
+          TOKEN=${{ secrets.BOT_TOKEN }} \
+          ./scripts/deploy.sh
