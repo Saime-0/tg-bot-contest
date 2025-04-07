@@ -30,22 +30,26 @@ if [ -z "$TOKEN" ]; then
 fi
 
 # Директория для загрузки исходного кода приложения
-src_dir="~/src/tg-contest-bot"
+src_dir="~/src/${app_prefix}-tg-contest-bot"
 # Рабочая директория приложения
-release_dir="~/release/tg-contest-bot"
+release_dir="~/release/${app_prefix}-tg-contest-bot"
+
+# Проверить наличие требуемых утилит на сервере
+#ssh $ssh_host "bash -s" < "$(cd "$(dirname "$0")" && pwd)"/check-utils.sh
+ssh $ssh_host "bash -s" < ./scripts/check-utils.sh
 
 # Создать директорию для исходного кода
 ssh $ssh_host "mkdir -p $src_dir"
 # Скопировать исходный код на хост
 SSH_HOST=$ssh_host DIR="$src_dir" ./scripts/rsync-project.sh
 
-## Подключиться к северу
-#ssh $ssh_host "bash -s" < local_script.sh
 
 # Создать директорию с релизом
 ssh $ssh_host "mkdir -p $release_dir"
 # Выполнить скрипт для инициализации БД
-ssh $ssh_host "DSN=file:$release_dir/main.db $src_dir/scripts/init-scheme.sh"
+database_dir=$release_dir
+database_filename="main.db"
+ssh $ssh_host "DSN=file:$database_dir/$database_filename $src_dir/scripts/init-scheme.sh"
 
 # Создать образ
 image_base_name="${app_prefix}-tg-contest-bot"
@@ -64,9 +68,9 @@ fi
 set +e
 
 # Запустить новый контейнер
-container_name=${new_image_name}_$(date +"%Y%m%d_%H%M%S")
-db_dsn="file:/var/lib/tg-contest-bot/main.db"
-ssh $ssh_host "podman run --name $container_name \
+new_container_name=${new_image_name}_$(date +"%Y%m%d_%H%M%S")
+db_dsn="file:/var/lib/tg-contest-bot/$database_filename"
+ssh $ssh_host "podman run --name $new_container_name \
   --replace
   -e TOKEN=$TOKEN \
   -e MAIN_DATABASE_DSN=$db_dsn \
@@ -75,11 +79,32 @@ ssh $ssh_host "podman run --name $container_name \
   -v $release_dir:/var/lib/tg-contest-bot \
   $new_image_name"
 
+if [ $? -eq 0 ]; then
+  ssh $ssh_host "podman rm $previous_container_name"
+  echo ""
+  echo "====================================="
+  echo "Запущен контейнер новый контейнер с приложением."
+  echo "Новый контейнер: $new_container_name"
+  echo "На основе образа: $new_image_name"
+  echo "Версия приложения: $version"
+  echo "Префикс приложения: $app_prefix"
+  echo "Прошлый остановленный и удаленный контейнер: ${previous_container_name:-Нет}"
+  echo "====================================="
+  exit 0;
+else
+  echo ""
+  echo "====================================="
+  echo "Не удалось запустить контейнер с новой версией приложения"
+fi
+
+
 # Если произойдет ошибка, скрипт остановится
 set -e
 
 # Запустить прошлый контейнер, если запуск нового завершился с ошибкой
-if [ $? -ne 0 ] && [ -n "$previous_container_name" ]; then
-    ssh "$ssh_host" "podman start $previous_container_name"
+if [ -n "$previous_container_name" ]; then
+  echo "Начат запуск прошлого контейнера"
+  ssh "$ssh_host" "podman start $previous_container_name"
+  echo "Прошлый контейнер успешно запущен"
 fi
 
