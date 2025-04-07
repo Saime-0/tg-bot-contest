@@ -62,6 +62,8 @@ if [ -n "$previous_container_id" ]; then
   previous_container_name=$(ssh $ssh_host "podman ps -q --format \{\{.Names\}\} --filter \"id=${previous_container_id}\"")
   echo "Найден прошлый контейнер с ID $previous_container_id и именем $previous_container_name"
   ssh $ssh_host "podman stop $previous_container_id" # Остановить прошлый контейнер
+  echo "Прошлый контейнер временно переименую в ${previous_container_name}_old"
+  ssh $ssh_host "podman rename $previous_container_id ${previous_container_name}_old"
   echo "Прошлый контейнер остановлен"
 else
   echo "Прошлых контейнеров нет"
@@ -72,7 +74,8 @@ set +e
 
 # Запустить новый контейнер
 echo "Запуск нового контейнера ..."
-new_container_name=${new_image_name}_$(date +"%Y%m%d_%H%M%S")
+new_container_name=${new_image_name}
+#new_container_name=${new_image_name}_$(date +"%Y%m%d_%H%M%S")
 db_dsn="file:/var/lib/tg-contest-bot/$database_filename"
 ssh $ssh_host "podman run --name "$new_container_name" \
   --cpus=0.4 \
@@ -104,10 +107,11 @@ if [ $? -eq 0 ]; then
   exit 0;
 fi
 
-
 echo ""
 echo "====================================="
 echo "Не удалось запустить контейнер с новой версией приложения"
+echo "Удаляю созданный контейнер"
+ssh $ssh_host "podman rm $new_container_name"
 
 # Если произойдет ошибка, скрипт остановится
 set -e
@@ -115,6 +119,8 @@ set -e
 # Запустить прошлый контейнер, если запуск нового завершился с ошибкой
 if [ -n "$previous_container_id" ]; then
   echo "Начат запуск прошлого контейнера"
+  echo "Прошлому контейнеру вернуть начальное имя"
+  ssh $ssh_host "podman rename $previous_container_id ${previous_container_name}"
   ssh "$ssh_host" "podman start $previous_container_id"
   echo "Прошлый контейнер успешно запущен"
 fi
