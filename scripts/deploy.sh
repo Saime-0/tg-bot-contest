@@ -96,11 +96,11 @@ if [ $? -eq 0 ]; then
   echo "====================================="
   echo "Запущен контейнер новый контейнер с приложением."
   echo "Новый контейнер: $new_container_name"
-  echo "На основе образа: $new_image_name"
-  echo "Версия приложения: $version"
+  echo "На основе образа: $new_image_name:$version"
   echo "Префикс приложения: $app_prefix"
-  echo "Прошлый остановленный и удаленный контейнер: ${previous_container_name:-Нет}"
-  echo "Прошлый остановленный и удаленный контейнер: ${previous_container_id:-Нет}"
+  echo "Прошлый остановленный и удаленный контейнер:"
+  echo "    ID: ${previous_container_id:-Нет}"
+  echo "    Name: ${previous_container_name:-Нет}"
   echo "====================================="
   exit 0;
 else
