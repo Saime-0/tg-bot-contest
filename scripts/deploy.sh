@@ -35,7 +35,6 @@ src_dir="~/src/${app_prefix}-tg-contest-bot"
 release_dir="~/release/${app_prefix}-tg-contest-bot"
 
 # Проверить наличие требуемых утилит на сервере
-#ssh $ssh_host "bash -s" < "$(cd "$(dirname "$0")" && pwd)"/check-utils.sh
 ssh $ssh_host "bash -s" < ./scripts/check-utils.sh
 
 # Создать директорию для исходного кода
@@ -103,12 +102,12 @@ if [ $? -eq 0 ]; then
   echo "    Name: ${previous_container_name:-Нет}"
   echo "====================================="
   exit 0;
-else
-  echo ""
-  echo "====================================="
-  echo "Не удалось запустить контейнер с новой версией приложения"
 fi
 
+
+echo ""
+echo "====================================="
+echo "Не удалось запустить контейнер с новой версией приложения"
 
 # Если произойдет ошибка, скрипт остановится
 set -e
@@ -120,3 +119,5 @@ if [ -n "$previous_container_id" ]; then
   echo "Прошлый контейнер успешно запущен"
 fi
 
+echo "====================================="
+exit 2;
