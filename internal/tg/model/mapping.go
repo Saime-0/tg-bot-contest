@@ -15,10 +15,26 @@ func UserDomain(tgUser gotgbot.User) model.User {
 	}
 }
 
-func ChatDomain(tgChat gotgbot.Chat) model.Chat {
-	return model.Chat{
+func ChatFullDomain(tgChat *gotgbot.ChatFullInfo) model.Chat {
+	chat := model.Chat{
 		ID:       int(tgChat.Id),
 		Title:    tgChat.Title,
 		Username: tgChat.Username,
+		ChildID:  0,
+		ParentID: 0,
 	}
+
+	switch tgChat.Type {
+	// Если этот чат является группой, то связанный чат является родительским
+	case gotgbot.ChatTypeGroup,
+		gotgbot.ChatTypeSupergroup:
+		chat.ParentID = int(tgChat.LinkedChatId)
+	// Если этот чат является каналом, то связанный чат является дочерним
+	case gotgbot.ChatTypeChannel:
+		chat.ChildID = int(tgChat.LinkedChatId)
+	// В Остальных случаях ничего не происходит
+	case gotgbot.ChatTypePrivate:
+	}
+
+	return chat
 }

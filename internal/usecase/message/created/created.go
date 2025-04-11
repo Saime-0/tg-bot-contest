@@ -48,8 +48,8 @@ func (p Params) Run() (Out, error) {
 	var comp model.Contest
 	err = tx.Get(&comp, `
 		select * from contests 
-		where chat_id=? 
-			and topic_id=?
+		where keyword_chat_id=? 
+			and keyword_topic_id=?
 			and ended_at is null
 	`, p.Chat.ID, p.TopicID)
 	if errors.Is(err, sql.ErrNoRows) {

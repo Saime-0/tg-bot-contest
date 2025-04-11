@@ -4,23 +4,36 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/Saime-0/tg-bot-contest/internal/common"
-	model2 "github.com/Saime-0/tg-bot-contest/internal/model"
+	"github.com/Saime-0/tg-bot-contest/internal/model"
 )
 
 type Params struct {
 	TX *sqlx.Tx
 
-	Chat model2.Chat
-	User model2.User
-	Comp model2.Contest
+	Chat model.Chat
+	User model.User
+	Comp model.Contest
 }
 
 type Out struct {
-	CreatedTickets []model2.Ticket
+	CreatedTickets []model.Ticket
 }
 
 func (p Params) Run() (Out, error) {
-	var unlinkedMembers []model2.Member
+	// Поиск чата для которого проходит конкурс
+	var competitiveChat model.Chat
+	if err := p.TX.Get(&competitiveChat, `
+			select chats.*
+			from chats
+			inner join contests 
+			    on chats.id = contests.competitive_chat_id
+			where contests.keyword_chat_id = ?
+				and  contests.ended_at is null 
+	`, p.Chat.ID); err != nil {
+		return Out{}, err
+	}
+
+	var unlinkedMembers []model.Member
 	if err := p.TX.Select(&unlinkedMembers, `
 		select * from members
 		where not ignore_in_ticket_counting 
@@ -29,7 +42,7 @@ func (p Params) Run() (Out, error) {
 			and inviter_id=?
 			and chat_id=?
 			and created_at>=?
-	`, model2.MemberStatusJoin, p.User.ID, p.Chat.ID, p.Comp.CreatedAt,
+	`, model.MemberStatusJoin, p.User.ID, competitiveChat.ID, p.Comp.CreatedAt,
 	); err != nil {
 		return Out{}, err
 	}
@@ -53,7 +66,7 @@ func (p Params) Run() (Out, error) {
 
 	var out Out
 	for i := 0; i < len(chunkedMembers); i++ {
-		ticket := model2.Ticket{
+		ticket := model.Ticket{
 			Number:    i + lastTicketNumber + 1,
 			UserID:    p.User.ID,
 			ContestID: p.Comp.ID,
@@ -64,7 +77,7 @@ func (p Params) Run() (Out, error) {
 		`, ticket); err != nil {
 			return Out{}, err
 		}
-		memberIDs := model2.MemberIDs(chunkedMembers[i])
+		memberIDs := model.MemberIDs(chunkedMembers[i])
 		if q, args, err := sqlx.In(`
 			update members
 			set in_ticket_id=?

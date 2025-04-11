@@ -17,9 +17,9 @@ import (
 	usageErrPkg "github.com/Saime-0/tg-bot-contest/internal/tg/usageErr"
 	"github.com/Saime-0/tg-bot-contest/internal/ue"
 	chatTake "github.com/Saime-0/tg-bot-contest/internal/usecase/chat/take"
-	chatUpdate "github.com/Saime-0/tg-bot-contest/internal/usecase/chat/update"
 	contestCreate "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/create"
 	contestStop "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/stop"
+	"github.com/Saime-0/tg-bot-contest/internal/usecase/member/botStatusUpdate"
 	memberStatusUpdate "github.com/Saime-0/tg-bot-contest/internal/usecase/member/statusUpdate"
 	messageCreated "github.com/Saime-0/tg-bot-contest/internal/usecase/message/created"
 )
@@ -44,8 +44,7 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	handlerGroup := []ext.Handler{
 		handlers.NewCommand("contestConfigRun", onlyInPrivateChat(c.modulation(contestConfigRun))),
 		handlers.NewCommand("contestStop", onlyInPrivateChat(c.modulation(contestStopHandler))),
-		handlers.NewMessage(c.inviteBotFilter, c.modulation(inviteBotMessage)),
-		handlers.NewMessage(c.leftBotFilter, c.modulation(leftBotMessage)),
+		handlers.NewMyChatMember(nil, c.modulation(newMyChatMember)),
 		handlers.NewMessage(nil, c.modulation(newMessage)),
 		handlers.NewChatMember(nil, c.modulation(newChatMember)),
 	}
@@ -57,31 +56,30 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	return nil
 }
 
-func leftBotMessage(r Request) error {
-	silentUpdateChat(r)
+func newMyChatMember(r Request) (err error) {
+	chat, _ := silentUpdateChat(r)
 
-	if err := InTransaction(r.DB, func(tx *sqlx.Tx) error {
-		return (&contestStop.Params{TX: tx, ChatID: int(r.ctx.Message.Chat.Id)}).Run()
-	}); err != nil {
-		slog.Debug("leftBotMessage: " + err.Error())
+	// Определить статус участия бота
+	botMemberStatus := defineMemberStatus(
+		r.ctx.MyChatMember.OldChatMember.GetStatus(), // OldStatus
+		r.ctx.MyChatMember.NewChatMember.GetStatus(), // NewStatus
+	)
+	if botMemberStatus == 0 {
+		return nil
+	}
+
+	err = inTransaction(r.DB, func(tx *sqlx.Tx) error {
+		return (&botStatusUpdate.Params{
+			TX:              tx,
+			Chat:            chat,
+			BotMemberStatus: botMemberStatus,
+		}).Run()
+	})
+	if err != nil {
+		slog.Debug("newMyChatMember: botStatusUpdate.Run: " + err.Error())
 	}
 
 	return nil
-}
-
-func inviteBotMessage(r Request) error {
-	chat := tgModel.ChatDomain(r.ctx.Message.Chat)
-	return chatUpdate.Run(r.DB, chat)
-}
-
-func (c *Controller) inviteBotFilter(msg *gotgbot.Message) bool {
-	for _, member := range msg.NewChatMembers {
-		if member.Id == c.Bot.Id {
-			return true
-		}
-	}
-
-	return false
 }
 
 type Request struct {
@@ -98,10 +96,6 @@ func (c *Controller) modulation(fn func(request Request) error) func(b *gotgbot.
 			ctx: ctx,
 		})
 	}
-}
-
-func (c *Controller) leftBotFilter(msg *gotgbot.Message) bool {
-	return msg.LeftChatMember != nil && msg.LeftChatMember.Id == c.Bot.Id
 }
 
 func contestConfigRun(r Request) (err error) {
@@ -122,9 +116,10 @@ func contestConfigRun(r Request) (err error) {
 		CreatorID: int(r.ctx.EffectiveSender.Id()),
 	}
 
+	// Чат (дочерний чат)
 	chatUsername := clearAt(kv[l10n.CfgChatUsername])
 	if chatUsername == "" {
-		if params.ChatID, err = getIntParameter(kv, l10n.CfgChatID, true, 0); err != nil {
+		if params.KeywordChatID, err = getIntParameter(kv, l10n.CfgChatID, true, 0); err != nil {
 			return r.reactError(err)
 		}
 	} else {
@@ -133,11 +128,26 @@ func contestConfigRun(r Request) (err error) {
 		if chat, err = chatTake.Run(r.DB, chatUsername); err != nil {
 			return r.reactError(err)
 		}
-		params.ChatID = chat.ID // сохранить ID в параметры
+		params.KeywordChatID = chat.ID // сохранить ID в параметры
+	}
+
+	// Канал (родительский чат)
+	chanUsername := clearAt(kv[l10n.CfgChannelUsername])
+	if chanUsername == "" {
+		if params.CompetitiveChatID, err = getIntParameter(kv, l10n.CfgChannelID, false, params.KeywordChatID); err != nil {
+			return r.reactError(err)
+		}
+	} else {
+		// Найти чат по username
+		var chat model.Chat
+		if chat, err = chatTake.Run(r.DB, chanUsername); err != nil {
+			return r.reactError(err)
+		}
+		params.CompetitiveChatID = chat.ID // сохранить ID в параметры
 	}
 
 	// Проверить наличие прав админа в чате
-	if err := r.checkAdminRights(int64(params.ChatID)); err != nil {
+	if err := r.checkAdminRights(int64(params.KeywordChatID)); err != nil {
 		return r.reactError(err)
 	}
 
@@ -147,16 +157,16 @@ func contestConfigRun(r Request) (err error) {
 	}
 
 	// Достать ID топика
-	if params.TopicID, err = getIntParameter(kv, l10n.CfgTopic, false, 0); err != nil {
+	if params.KeywordTopicID, err = getIntParameter(kv, l10n.CfgTopic, false, 0); err != nil {
 		return r.reactError(err)
 	}
 
 	// Проверить доступность писать в чат
-	if err = checkChatAvailability(r, params.ChatID, params.TopicID); err != nil {
+	if err = checkChatAvailability(r, params.KeywordChatID, params.KeywordTopicID); err != nil {
 		return r.reactError(err)
 	}
 
-	if err := InTransaction(r.DB, func(tx *sqlx.Tx) error {
+	if err := inTransaction(r.DB, func(tx *sqlx.Tx) error {
 		params.TX = tx
 		return params.Run()
 	}); err != nil {
@@ -201,34 +211,8 @@ func getIntParameter(kv map[string]string, name string, isRequired bool, default
 	return int(val), nil
 }
 
-func fastMDReply(r Request, msg string) (*gotgbot.Message, error) {
-	return r.ctx.Message.Reply(r.Bot, msg, &gotgbot.SendMessageOpts{
-		ParseMode: gotgbot.ParseModeMarkdownV2,
-	})
-}
-
-func fastReply(r Request, msg string) (*gotgbot.Message, error) {
-	return r.ctx.Message.Reply(r.Bot, msg, nil)
-}
-
-func isGroup(chat gotgbot.Chat) bool {
-	return chat.Type == gotgbot.ChatTypeSupergroup ||
-		chat.Type == gotgbot.ChatTypeGroup
-}
-
-// silentUpdateChat втихую обновляет чат
-func silentUpdateChat(r Request) {
-	if r.ctx.EffectiveChat == nil {
-		return
-	}
-	chat := tgModel.ChatDomain(*r.ctx.EffectiveChat)
-	if err := chatUpdate.Run(r.DB, chat); err != nil {
-		slog.Warn("newMessage: chatUpdate.Run: " + err.Error())
-	}
-}
-
 func newMessage(r Request) (err error) {
-	silentUpdateChat(r)
+	chat, _ := silentUpdateChat(r)
 
 	msg := r.ctx.Message
 	if !isGroup(msg.Chat) || // Выйти, если сообщение не из группы ...
@@ -244,7 +228,7 @@ func newMessage(r Request) (err error) {
 	var messageCreatedOut messageCreated.Out
 	if messageCreatedOut, err = (&messageCreated.Params{
 		DB:      r.DB,
-		Chat:    tgModel.ChatDomain(msg.Chat),
+		Chat:    chat,
 		User:    tgModel.UserDomain(*msg.From),
 		Text:    msg.GetText(),
 		TopicID: topicID,
@@ -303,7 +287,7 @@ func contestStopHandler(r Request) (err error) {
 		return r.reactError(err)
 	}
 
-	if err = InTransaction(r.DB, func(tx *sqlx.Tx) error {
+	if err = inTransaction(r.DB, func(tx *sqlx.Tx) error {
 		return (&contestStop.Params{TX: tx, ChatID: chatID}).Run()
 	}); err != nil {
 		return r.reactError(err)
@@ -346,7 +330,7 @@ func defineMemberStatus(old, new string) uint {
 }
 
 func newChatMember(r Request) error {
-	silentUpdateChat(r)
+	chat, _ := silentUpdateChat(r)
 
 	oldStatus := r.ctx.ChatMember.OldChatMember.GetStatus()
 	newStatus := r.ctx.ChatMember.NewChatMember.GetStatus()
@@ -363,14 +347,14 @@ func newChatMember(r Request) error {
 
 	memberStatusUpdateParams := &memberStatusUpdate.Params{
 		TX:           nil,
-		Chat:         tgModel.ChatDomain(r.ctx.ChatMember.Chat),
+		Chat:         chat,
 		MemberStatus: memberStatus,
 		Participant:  tgModel.UserDomain(participant),
 		Initiator:    tgModel.UserDomain(initiator),
 		ViaLink:      viaLink,
 	}
 
-	if err := InTransaction(r.DB, func(tx *sqlx.Tx) error {
+	if err := inTransaction(r.DB, func(tx *sqlx.Tx) error {
 		memberStatusUpdateParams.TX = tx
 		return memberStatusUpdateParams.Run()
 	}); err != nil {
