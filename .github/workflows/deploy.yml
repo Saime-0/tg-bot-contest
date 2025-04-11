@@ -7,10 +7,6 @@ on:
         description: 'окружение из settings/environments для деплоя'
         required: true
         type: string
-      prefix:
-        description: 'идентификатор экземпляра приложения. Например prod, dev, feature1'
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -51,6 +47,6 @@ jobs:
         run: |
           SSH_HOST=Prod \
           VERSION=${{ github.ref_name }} \
-          APP_PREFIX=${{ inputs.prefix }} \
+          APP_PREFIX=${{ env.APP_PREFIX }} \
           TOKEN=${{ secrets.BOT_TOKEN }} \
           ./scripts/deploy.sh
