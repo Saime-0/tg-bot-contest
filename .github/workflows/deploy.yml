@@ -47,6 +47,6 @@ jobs:
         run: |
           SSH_HOST=Prod \
           VERSION=${{ github.ref_name }} \
-          APP_PREFIX=${{ env.APP_PREFIX }} \
+          APP_PREFIX=${{ vars.APP_PREFIX }} \
           TOKEN=${{ secrets.BOT_TOKEN }} \
           ./scripts/deploy.sh
