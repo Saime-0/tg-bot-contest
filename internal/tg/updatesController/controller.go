@@ -1,6 +1,7 @@
 package updatesController
 
 import (
+	"encoding/json"
 	"log/slog"
 	"slices"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	tgModel "github.com/Saime-0/tg-bot-contest/internal/tg/model"
 	usageErrPkg "github.com/Saime-0/tg-bot-contest/internal/tg/usageErr"
 	"github.com/Saime-0/tg-bot-contest/internal/ue"
+	chatLinkingUpdate "github.com/Saime-0/tg-bot-contest/internal/usecase/chat/linking/update"
 	chatTake "github.com/Saime-0/tg-bot-contest/internal/usecase/chat/take"
 	contestCreate "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/create"
 	contestStop "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/stop"
@@ -65,16 +67,38 @@ func newMyChatMember(r Request) (err error) {
 	if botMemberStatus == 0 {
 		return nil
 	}
-	params := botStatusUpdate.Params{
-		TX: nil,
-		// Определить чат в котором произошло событие входы/выхода
-		Chat: tgModel.ChatDomain(r.ctx.MyChatMember.Chat),
-		// Определить статус участия бота
-		BotMemberStatus: botMemberStatus,
+	// Определить чат в котором произошло событие входы/выхода
+	chat := tgModel.ChatDomain(r.ctx.MyChatMember.Chat)
+
+	// Подробная информация для доступа к id связанного чата
+	var fullInfo *gotgbot.ChatFullInfo
+	if fullInfo, err = r.GetChat(int64(chat.ID), nil); err != nil {
+		slog.Error("newMyChatMember: r.GetChat: " + err.Error())
 	}
+
 	err = inTransaction(r.DB, func(tx *sqlx.Tx) error {
-		params.TX = tx
-		return params.Run()
+		updateChatParams := botStatusUpdate.Params{
+			TX:              tx,
+			Chat:            tgModel.ChatDomain(r.ctx.MyChatMember.Chat),
+			LinkedChatID:    int(fullInfo.LinkedChatId),
+			BotMemberStatus: botMemberStatus,
+		}
+		return updateChatParams.Run()
+
+		// Если нет связанного чата, завершить транзакцию
+		if fullInfo.LinkedChatId == 0 {
+			return nil
+		}
+		// Сохранить запись о существовании связи
+		updateLinkingParams := chatLinkingUpdate.Params{
+			TX: tx,
+			Linking: model.ChatLinking{
+				ParentID: chat.ID,
+				ChildID:  int(fullInfo.LinkedChatId),
+			},
+		}
+
+		return updateLinkingParams.Run()
 	})
 	if err != nil {
 		slog.Debug("newMyChatMember: botStatusUpdate.Run: " + err.Error())

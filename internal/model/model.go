@@ -51,3 +51,8 @@ type Ticket struct {
 	UserID    int `json:"user_id" db:"user_id"`
 	ContestID int `json:"contest_id" db:"contest_id"`
 }
+
+type ChatLinking struct {
+	ParentID int `db:"parent_id"`
+	ChildID  int `db:"child_id"`
+}
