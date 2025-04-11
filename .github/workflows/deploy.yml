@@ -1,12 +1,13 @@
-name: deploy-to-prod-server-2
+name: deploy
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Версия приложения'
+      environment:
+        description: 'окружение из settings/environments для деплоя'
         required: true
         type: string
+        default: none
 
 permissions:
   contents: read
@@ -23,7 +24,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: golangci-lint
-    environment: ProductionServer2
+    environment: ${{ inputs.environment}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,7 +47,7 @@ jobs:
       - name: Deploy
         run: |
           SSH_HOST=Prod \
-          VERSION=${{ inputs.version }} \
+          VERSION=${{ github.ref_name }} \
           APP_PREFIX=prod \
           TOKEN=${{ secrets.BOT_TOKEN }} \
           ./scripts/deploy.sh
