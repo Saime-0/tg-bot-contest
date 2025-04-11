@@ -134,7 +134,7 @@ func contestConfigRun(r Request) (err error) {
 	// Канал (родительский чат)
 	chanUsername := clearAt(kv[l10n.CfgChannelUsername])
 	if chanUsername == "" {
-		if params.CompetitiveChatID, err = getIntParameter(kv, l10n.CfgChannelID, true, params.KeywordChatID); err != nil {
+		if params.CompetitiveChatID, err = getIntParameter(kv, l10n.CfgChannelID, false, params.KeywordChatID); err != nil {
 			return r.reactError(err)
 		}
 	} else {
