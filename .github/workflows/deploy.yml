@@ -7,7 +7,6 @@ on:
         description: 'окружение из settings/environments для деплоя'
         required: true
         type: string
-        default: none
 
 permissions:
   contents: read
