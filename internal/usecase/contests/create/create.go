@@ -1,6 +1,7 @@
 package create
 
 import (
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/Saime-0/tg-bot-contest/internal/l10n"
@@ -11,11 +12,12 @@ import (
 type Params struct {
 	TX *sqlx.Tx
 
-	Multiplicity int
-	Keyword      string
-	ChatID       int
-	TopicID      int
-	CreatorID    int
+	Multiplicity      int
+	Keyword           string
+	CompetitiveChatID int
+	KeywordChatID     int
+	KeywordTopicID    int
+	CreatorID         int
 }
 
 const (
@@ -24,14 +26,23 @@ const (
 )
 
 func (p *Params) Run() error {
+	var competitiveChat model.Chat
+	if err := p.TX.Get(&competitiveChat, `select * from chats where id = ?`, p.CompetitiveChatID); err != nil {
+		return err
+	}
+	var keywordChat model.Chat
+	if err := p.TX.Get(&keywordChat, `select * from chats where id = ?`, p.KeywordChatID); err != nil {
+		return err
+	}
+
 	var exists bool
 	if err := p.TX.Get(&exists, `
 		select exists(
 		    select 1 from contests 
-			where chat_id=? 
+			where competitive_chat_id=? 
 			  and ended_at is null
 		)
-  	`, p.ChatID); err != nil {
+  	`, p.CompetitiveChatID); err != nil {
 		return err
 	}
 	if exists {
@@ -46,15 +57,19 @@ func (p *Params) Run() error {
 	}
 
 	_, err := p.TX.NamedExec(`
-		insert into contests (creator_id,chat_id,topic_id,keyword,multiplicity)
-		values (:creator_id,:chat_id,:topic_id,:keyword,:multiplicity)`,
-		model.Contest{
-			CreatorID:    p.CreatorID,
-			ChatID:       p.ChatID,
-			TopicID:      p.TopicID,
-			Keyword:      p.Keyword,
-			Multiplicity: p.Multiplicity,
-		})
+		insert into contests (id,creator_id,competitive_chat_id,keyword_chat_id,keyword_topic_id,keyword,multiplicity)
+		values (:id,:creator_id,:competitive_chat_id,:keyword_chat_id,:keyword_topic_id,:keyword,:multiplicity)
+	`, model.Contest{
+		ID:                uuid.NewString(),
+		CreatorID:         p.CreatorID,
+		CompetitiveChatID: p.CompetitiveChatID,
+		KeywordChatID:     p.KeywordChatID,
+		KeywordTopicID:    p.KeywordTopicID,
+		Keyword:           p.Keyword,
+		Multiplicity:      p.Multiplicity,
+		//CreatedAt:         now,
+		//EndedAt:           nil,
+	})
 
 	return err
 }

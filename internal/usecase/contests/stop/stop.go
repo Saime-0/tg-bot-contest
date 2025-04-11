@@ -22,7 +22,7 @@ func (p *Params) Run() error {
 		update contests 
 		set ended_at = current_timestamp
 		where ended_at is null
-			and chat_id=?
+			and competitive_chat_id=?
 	`, p.ChatID); err != nil {
 		return err
 	} else if affected, _ := res.RowsAffected(); affected == 0 {

@@ -8,6 +8,8 @@ const (
 	CfgKeyword                         = "ключевое слово"
 	CfgChatUsername                    = "чат"
 	CfgChatID                          = "ид чата"
+	CfgChannelUsername                 = "канал"
+	CfgChannelID                       = "ид канала"
 	CfgTopic                           = "топик"
 	DefaultKeyword                     = "готов"
 	YourTicketNumbers                  = "Ваши номера участника - "

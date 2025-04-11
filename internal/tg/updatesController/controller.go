@@ -116,9 +116,10 @@ func contestConfigRun(r Request) (err error) {
 		CreatorID: int(r.ctx.EffectiveSender.Id()),
 	}
 
+	// Чат (дочерний чат)
 	chatUsername := clearAt(kv[l10n.CfgChatUsername])
 	if chatUsername == "" {
-		if params.ChatID, err = getIntParameter(kv, l10n.CfgChatID, true, 0); err != nil {
+		if params.KeywordChatID, err = getIntParameter(kv, l10n.CfgChatID, true, 0); err != nil {
 			return r.reactError(err)
 		}
 	} else {
@@ -127,11 +128,26 @@ func contestConfigRun(r Request) (err error) {
 		if chat, err = chatTake.Run(r.DB, chatUsername); err != nil {
 			return r.reactError(err)
 		}
-		params.ChatID = chat.ID // сохранить ID в параметры
+		params.KeywordChatID = chat.ID // сохранить ID в параметры
+	}
+
+	// Канал (родительский чат)
+	chanUsername := clearAt(kv[l10n.CfgChannelUsername])
+	if chanUsername == "" {
+		if params.CompetitiveChatID, err = getIntParameter(kv, l10n.CfgChannelID, true, params.KeywordChatID); err != nil {
+			return r.reactError(err)
+		}
+	} else {
+		// Найти чат по username
+		var chat model.Chat
+		if chat, err = chatTake.Run(r.DB, chanUsername); err != nil {
+			return r.reactError(err)
+		}
+		params.CompetitiveChatID = chat.ID // сохранить ID в параметры
 	}
 
 	// Проверить наличие прав админа в чате
-	if err := r.checkAdminRights(int64(params.ChatID)); err != nil {
+	if err := r.checkAdminRights(int64(params.KeywordChatID)); err != nil {
 		return r.reactError(err)
 	}
 
@@ -141,12 +157,12 @@ func contestConfigRun(r Request) (err error) {
 	}
 
 	// Достать ID топика
-	if params.TopicID, err = getIntParameter(kv, l10n.CfgTopic, false, 0); err != nil {
+	if params.KeywordTopicID, err = getIntParameter(kv, l10n.CfgTopic, false, 0); err != nil {
 		return r.reactError(err)
 	}
 
 	// Проверить доступность писать в чат
-	if err = checkChatAvailability(r, params.ChatID, params.TopicID); err != nil {
+	if err = checkChatAvailability(r, params.KeywordChatID, params.KeywordTopicID); err != nil {
 		return r.reactError(err)
 	}
 

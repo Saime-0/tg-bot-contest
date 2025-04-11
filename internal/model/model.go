@@ -27,11 +27,6 @@ type Member struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-//const (
-//	ChatTypeGorup   uint = 1
-//	ChatTypeChannel uint = 2
-//)
-
 type Chat struct {
 	ID       int    `db:"id"`
 	Title    string `db:"title"`
@@ -43,18 +38,19 @@ type Chat struct {
 }
 
 type Contest struct {
-	ID           int        `db:"id"`
-	CreatorID    int        `db:"creator_id"`
-	ChatID       int        `db:"chat_id"`
-	TopicID      int        `db:"topic_id"`
-	Keyword      string     `db:"keyword"`
-	Multiplicity int        `db:"multiplicity"`
-	CreatedAt    time.Time  `db:"created_at"`
-	EndedAt      *time.Time `db:"ended_at"`
+	ID                string     `db:"id"`
+	CreatorID         int        `db:"creator_id"`
+	CompetitiveChatID int        `db:"competitive_chat_id"`
+	KeywordChatID     int        `db:"keyword_chat_id"`
+	KeywordTopicID    int        `db:"keyword_topic_id"`
+	Keyword           string     `db:"keyword"`
+	Multiplicity      int        `db:"multiplicity"`
+	CreatedAt         time.Time  `db:"created_at"`
+	EndedAt           *time.Time `db:"ended_at"`
 }
 
 type Ticket struct {
-	Number    int `json:"number" db:"number"`
-	UserID    int `json:"user_id" db:"user_id"`
-	ContestID int `json:"contest_id" db:"contest_id"`
+	Number    int    `json:"number" db:"number"`
+	UserID    int    `json:"user_id" db:"user_id"`
+	ContestID string `json:"contest_id" db:"contest_id"`
 }

@@ -23,6 +23,8 @@ CREATE TABLE users(
 
 CREATE TABLE chats(
     id INTEGER PRIMARY KEY,
+    child_id INTEGER NOT NULL,
+    parent_id INTEGER NOT NULL,
     title TEXT NOT NULL,
     username TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -31,22 +33,18 @@ CREATE TABLE chats(
 CREATE TABLE tickets(
     number INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
-    contest_id INTEGER NOT NULL,
+    contest_id TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE contests(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY,
     creator_id INTEGER,
-    chat_id INTEGER NOT NULL,
-    topic_id INTEGER NOT NULL DEFAULT 0,
+    competitive_chat_id INTEGER NOT NULL,
+    keyword_chat_id INTEGER NOT NULL,
+    keyword_topic_id INTEGER NOT NULL,
     keyword TEXT NOT NULL,
     multiplicity INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ended_at TIMESTAMP NULL
-);
-
-CREATE TABLE metadata (
-    key TEXT PRIMARY KEY,
-    value TEXT
 );
