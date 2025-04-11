@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/Saime-0/tg-bot-contest/internal/l10n"
+	"github.com/Saime-0/tg-bot-contest/internal/model"
 	tgModel "github.com/Saime-0/tg-bot-contest/internal/tg/model"
 	usageErrPkg "github.com/Saime-0/tg-bot-contest/internal/tg/usageErr"
 	"github.com/Saime-0/tg-bot-contest/internal/ue"
@@ -49,14 +50,24 @@ func inTransaction(db *sqlx.DB, f func(tx *sqlx.Tx) error) (err error) {
 }
 
 // silentUpdateChat втихую обновляет чат
-func silentUpdateChat(r Request) {
+func silentUpdateChat(r Request) (model.Chat, *gotgbot.ChatFullInfo) {
 	if r.ctx.EffectiveChat == nil {
-		return
+		return model.Chat{}, nil
 	}
-	chat := tgModel.ChatDomain(*r.ctx.EffectiveChat)
-	if err := chatUpdate.Run(r.DB, chat); err != nil {
-		slog.Warn("newMessage: chatUpdate.Run: " + err.Error())
+	// Подробная информация для доступа к id связанного чата
+	fullInfo, err := r.GetChat(r.ctx.EffectiveChat.Id, nil)
+	if err != nil {
+		slog.Error("silentUpdateChat: r.GetChat: " + err.Error())
+		return model.Chat{}, nil
 	}
+
+	// Определить чат в котором произошло событие входы/выхода
+	chat := tgModel.ChatFullDomain(fullInfo)
+	if err = chatUpdate.Run(r.DB, chat); err != nil {
+		slog.Warn("silentUpdateChat: chatUpdate.Run: " + err.Error())
+	}
+
+	return chat, fullInfo
 }
 
 func fastMDReply(r Request, msg string) (*gotgbot.Message, error) {

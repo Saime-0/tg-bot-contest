@@ -14,7 +14,6 @@ type Params struct {
 	TX *sqlx.Tx
 
 	Chat            model.Chat
-	LinkedChatID    int
 	BotMemberStatus uint
 }
 

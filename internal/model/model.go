@@ -28,9 +28,10 @@ type Member struct {
 }
 
 type Chat struct {
-	ID       int    `db:"id"`
-	Title    string `db:"title"`
-	Username string `db:"username"`
+	ID           int    `db:"id"`
+	Title        string `db:"title"`
+	Username     string `db:"username"`
+	LinkedChatID int    `db:"linked_chat_id"`
 
 	CreatedAt time.Time `db:"created_at"`
 }
@@ -50,9 +51,4 @@ type Ticket struct {
 	Number    int `json:"number" db:"number"`
 	UserID    int `json:"user_id" db:"user_id"`
 	ContestID int `json:"contest_id" db:"contest_id"`
-}
-
-type ChatLinking struct {
-	ParentID int `db:"parent_id"`
-	ChildID  int `db:"child_id"`
 }

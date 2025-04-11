@@ -15,10 +15,23 @@ func UserDomain(tgUser gotgbot.User) model.User {
 	}
 }
 
+// ChatDomain
+// Deprecated, use ChatFullDomain
 func ChatDomain(tgChat gotgbot.Chat) model.Chat {
 	return model.Chat{
 		ID:       int(tgChat.Id),
 		Title:    tgChat.Title,
 		Username: tgChat.Username,
+		//LinkedChatID: 0,
+		//CreatedAt:    time.Time{},
+	}
+}
+func ChatFullDomain(tgChat *gotgbot.ChatFullInfo) model.Chat {
+	return model.Chat{
+		ID:           int(tgChat.Id),
+		Title:        tgChat.Title,
+		Username:     tgChat.Username,
+		LinkedChatID: int(tgChat.LinkedChatId),
+		//CreatedAt:    time.Time{},
 	}
 }

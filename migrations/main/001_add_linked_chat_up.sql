@@ -1,5 +1,1 @@
-CREATE TABLE chat_linking (
-      parent_id INTEGER,
-      child_id  INTEGER,
-      PRIMARY KEY (parent_id, child_id)
-);
+ALTER TABLE chats ADD COLUMN linked_chat_id INTEGER NOT NULL DEFAULT 0;

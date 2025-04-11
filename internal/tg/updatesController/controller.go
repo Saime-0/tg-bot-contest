@@ -1,7 +1,6 @@
 package updatesController
 
 import (
-	"encoding/json"
 	"log/slog"
 	"slices"
 	"strconv"
@@ -17,7 +16,6 @@ import (
 	tgModel "github.com/Saime-0/tg-bot-contest/internal/tg/model"
 	usageErrPkg "github.com/Saime-0/tg-bot-contest/internal/tg/usageErr"
 	"github.com/Saime-0/tg-bot-contest/internal/ue"
-	chatLinkingUpdate "github.com/Saime-0/tg-bot-contest/internal/usecase/chat/linking/update"
 	chatTake "github.com/Saime-0/tg-bot-contest/internal/usecase/chat/take"
 	contestCreate "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/create"
 	contestStop "github.com/Saime-0/tg-bot-contest/internal/usecase/contests/stop"
@@ -59,6 +57,8 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 }
 
 func newMyChatMember(r Request) (err error) {
+	chat, _ := silentUpdateChat(r)
+
 	// Определить статус участия бота
 	botMemberStatus := defineMemberStatus(
 		r.ctx.MyChatMember.OldChatMember.GetStatus(), // OldStatus
@@ -67,38 +67,13 @@ func newMyChatMember(r Request) (err error) {
 	if botMemberStatus == 0 {
 		return nil
 	}
-	// Определить чат в котором произошло событие входы/выхода
-	chat := tgModel.ChatDomain(r.ctx.MyChatMember.Chat)
-
-	// Подробная информация для доступа к id связанного чата
-	var fullInfo *gotgbot.ChatFullInfo
-	if fullInfo, err = r.GetChat(int64(chat.ID), nil); err != nil {
-		slog.Error("newMyChatMember: r.GetChat: " + err.Error())
-	}
 
 	err = inTransaction(r.DB, func(tx *sqlx.Tx) error {
-		updateChatParams := botStatusUpdate.Params{
+		return (&botStatusUpdate.Params{
 			TX:              tx,
-			Chat:            tgModel.ChatDomain(r.ctx.MyChatMember.Chat),
-			LinkedChatID:    int(fullInfo.LinkedChatId),
+			Chat:            chat,
 			BotMemberStatus: botMemberStatus,
-		}
-		return updateChatParams.Run()
-
-		// Если нет связанного чата, завершить транзакцию
-		if fullInfo.LinkedChatId == 0 {
-			return nil
-		}
-		// Сохранить запись о существовании связи
-		updateLinkingParams := chatLinkingUpdate.Params{
-			TX: tx,
-			Linking: model.ChatLinking{
-				ParentID: chat.ID,
-				ChildID:  int(fullInfo.LinkedChatId),
-			},
-		}
-
-		return updateLinkingParams.Run()
+		}).Run()
 	})
 	if err != nil {
 		slog.Debug("newMyChatMember: botStatusUpdate.Run: " + err.Error())
@@ -221,7 +196,7 @@ func getIntParameter(kv map[string]string, name string, isRequired bool, default
 }
 
 func newMessage(r Request) (err error) {
-	silentUpdateChat(r)
+	chat, _ := silentUpdateChat(r)
 
 	msg := r.ctx.Message
 	if !isGroup(msg.Chat) || // Выйти, если сообщение не из группы ...
@@ -237,7 +212,7 @@ func newMessage(r Request) (err error) {
 	var messageCreatedOut messageCreated.Out
 	if messageCreatedOut, err = (&messageCreated.Params{
 		DB:      r.DB,
-		Chat:    tgModel.ChatDomain(msg.Chat),
+		Chat:    chat,
 		User:    tgModel.UserDomain(*msg.From),
 		Text:    msg.GetText(),
 		TopicID: topicID,
@@ -339,7 +314,7 @@ func defineMemberStatus(old, new string) uint {
 }
 
 func newChatMember(r Request) error {
-	silentUpdateChat(r)
+	chat, _ := silentUpdateChat(r)
 
 	oldStatus := r.ctx.ChatMember.OldChatMember.GetStatus()
 	newStatus := r.ctx.ChatMember.NewChatMember.GetStatus()
@@ -356,7 +331,7 @@ func newChatMember(r Request) error {
 
 	memberStatusUpdateParams := &memberStatusUpdate.Params{
 		TX:           nil,
-		Chat:         tgModel.ChatDomain(r.ctx.ChatMember.Chat),
+		Chat:         chat,
 		MemberStatus: memberStatus,
 		Participant:  tgModel.UserDomain(participant),
 		Initiator:    tgModel.UserDomain(initiator),
