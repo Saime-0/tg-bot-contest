@@ -13,6 +13,10 @@ type Params struct {
 	ChatID int
 }
 
+var (
+	ErrContestNotFound = ue.New(l10n.ContestStopNotFound)
+)
+
 func (p *Params) Run() error {
 	if res, err := p.TX.Exec(`
 		update contests 
@@ -22,7 +26,7 @@ func (p *Params) Run() error {
 	`, p.ChatID); err != nil {
 		return err
 	} else if affected, _ := res.RowsAffected(); affected == 0 {
-		return ue.New(l10n.ContestStopNotFound)
+		return ErrContestNotFound
 	}
 
 	return nil

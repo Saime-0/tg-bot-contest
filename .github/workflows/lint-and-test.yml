@@ -1,0 +1,38 @@
+# Определяем имя workflow
+name: Run Linters and Tests
+
+# Указываем триггеры для запуска workflow
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Определяем jobs, которые будут выполняться в рамках workflow
+jobs:
+  go-test:
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.24
+
+      - name: Run go test
+        run: go test -v -short -vet=all ./...
+
+  golangci-lint:
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    needs: go-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          args: --timeout 10m
