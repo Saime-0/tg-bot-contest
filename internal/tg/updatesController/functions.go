@@ -50,35 +50,21 @@ func inTransaction(db *sqlx.DB, f func(tx *sqlx.Tx) error) (err error) {
 }
 
 // silentUpdateChat втихую обновляет чат
-func silentUpdateChat(r Request) (model.Chat, *gotgbot.ChatFullInfo) {
+func silentUpdateChat(r Request) model.Chat {
 	if r.ctx.EffectiveChat == nil {
-		return model.Chat{}, nil
+		return model.Chat{}
 	}
 	if r.ctx.EffectiveChat.Type == gotgbot.ChatTypePrivate {
-		//// Обновить пользователя который только что написал
-		//if r.ctx.EffectiveUser != nil {
-		//	user := tgModel.UserDomain(*r.ctx.EffectiveUser)
-		//	if err := userUpdate.Run(r.DB, user); err != nil {
-		//		slog.Warn("silentUpdateChat: chatUpdate.Run: " + err.Error())
-		//	}
-		//}
-		return model.Chat{}, &gotgbot.ChatFullInfo{}
-	}
-
-	// Подробная информация для доступа к id связанного чата
-	fullInfo, err := r.GetChat(r.ctx.EffectiveChat.Id, nil)
-	if err != nil {
-		slog.Error("silentUpdateChat: r.GetChat: " + err.Error())
-		return model.Chat{}, nil
+		return model.Chat{}
 	}
 
 	// Определить чат в котором произошло событие входы/выхода
-	chat := tgModel.ChatFullDomain(fullInfo)
-	if err = chatUpdate.Run(r.DB, chat); err != nil {
+	chat := tgModel.ChatFullDomain(r.ctx.EffectiveChat)
+	if err := chatUpdate.Run(r.DB, chat); err != nil {
 		slog.Warn("silentUpdateChat: chatUpdate.Run: " + err.Error())
 	}
 
-	return chat, fullInfo
+	return chat
 }
 
 func fastMDReply(r Request, msg string) (*gotgbot.Message, error) {

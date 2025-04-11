@@ -23,8 +23,6 @@ CREATE TABLE users(
 
 CREATE TABLE chats(
     id INTEGER PRIMARY KEY,
-    child_id INTEGER NOT NULL,
-    parent_id INTEGER NOT NULL,
     title TEXT NOT NULL,
     username TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
