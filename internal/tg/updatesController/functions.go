@@ -54,6 +54,17 @@ func silentUpdateChat(r Request) (model.Chat, *gotgbot.ChatFullInfo) {
 	if r.ctx.EffectiveChat == nil {
 		return model.Chat{}, nil
 	}
+	if r.ctx.EffectiveChat.Type == gotgbot.ChatTypePrivate {
+		//// Обновить пользователя который только что написал
+		//if r.ctx.EffectiveUser != nil {
+		//	user := tgModel.UserDomain(*r.ctx.EffectiveUser)
+		//	if err := userUpdate.Run(r.DB, user); err != nil {
+		//		slog.Warn("silentUpdateChat: chatUpdate.Run: " + err.Error())
+		//	}
+		//}
+		return model.Chat{}, &gotgbot.ChatFullInfo{}
+	}
+
 	// Подробная информация для доступа к id связанного чата
 	fullInfo, err := r.GetChat(r.ctx.EffectiveChat.Id, nil)
 	if err != nil {
