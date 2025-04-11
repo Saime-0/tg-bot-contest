@@ -8,13 +8,11 @@ import (
 
 func Run(txdb txOrDB, chat model.Chat) error {
 	_, err := txdb.NamedExec(`
-		insert into chats (id, title, username, child_id, parent_id)
-		values (:id, :title, :username, :child_id, :parent_id)
+		insert into chats (id, title, username)
+		values (:id, :title, :username)
 		on conflict (id) do update set 
 		   title = excluded.title,
-		   username = excluded.username,
-		   child_id = excluded.child_id,
-		   parent_id = excluded.parent_id
+		   username = excluded.username
     `, chat)
 
 	return err

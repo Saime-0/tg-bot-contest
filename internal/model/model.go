@@ -31,8 +31,6 @@ type Chat struct {
 	ID       int    `db:"id"`
 	Title    string `db:"title"`
 	Username string `db:"username"`
-	ChildID  int    `db:"child_id"`
-	ParentID int    `db:"parent_id"`
 
 	CreatedAt time.Time `db:"created_at"`
 }

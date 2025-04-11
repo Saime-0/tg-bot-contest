@@ -57,7 +57,7 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 }
 
 func newMyChatMember(r Request) (err error) {
-	chat, _ := silentUpdateChat(r)
+	chat := silentUpdateChat(r)
 
 	// Определить статус участия бота
 	botMemberStatus := defineMemberStatus(
@@ -212,7 +212,7 @@ func getIntParameter(kv map[string]string, name string, isRequired bool, default
 }
 
 func newMessage(r Request) (err error) {
-	chat, _ := silentUpdateChat(r)
+	chat := silentUpdateChat(r)
 
 	msg := r.ctx.Message
 	if !isGroup(msg.Chat) || // Выйти, если сообщение не из группы ...
@@ -330,7 +330,7 @@ func defineMemberStatus(old, new string) uint {
 }
 
 func newChatMember(r Request) error {
-	chat, _ := silentUpdateChat(r)
+	chat := silentUpdateChat(r)
 
 	oldStatus := r.ctx.ChatMember.OldChatMember.GetStatus()
 	newStatus := r.ctx.ChatMember.NewChatMember.GetStatus()
