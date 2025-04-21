@@ -1,0 +1,42 @@
+#!/bin/bash
+
+
+#NAMESPACE=... # (dev/prod/...)
+#APP_SRC_DIR="$HOME/release/${NAMESPACE}-tg-contest-bot"
+#APP_FILENAME=tgcontestbot
+
+set -e
+
+# Создать quadlet volume из шаблона, если его нет, и запустить службу
+VOLUME_NAME="${NAMESPACE}-tg-contest-bot"
+if ! podman volume exists "$VOLUME_NAME"; then
+  QUADLET_TPL_PATH="$APP_SRC_DIR/containers/volume.template"
+  QUADLET_PATH="$HOME/.config/containers/systemd/$VOLUME_NAME.volume"
+  cp "$QUADLET_TPL_PATH" "$QUADLET_PATH" #  envsubst < $QUADLET_TPL_PATH > "$QUADLET_PATH"
+  systemctl --user daemon-reload
+  systemctl --user start "$VOLUME_NAME-volume"
+fi
+
+
+# Создать БД если не создана
+DB_DIR=$(podman volume inspect "$VOLUME_NAME" | jq -r '.[0].Mountpoint')
+DB_FILENAME=main.db
+DB_PATH="$DB_DIR/$DB_FILENAME"
+if [ ! -f "$DB_PATH" ]; then
+  sqlite3 "$DB_PATH" ''
+  goose --dir="$APP_SRC_DIR/migrations/main" sqlite3 "$DB_PATH" up
+fi
+
+
+# Создает quadlet container из шаблона и запустить службу
+CONTAINER_NAME="${NAMESPACE}-tg-contest-bot"
+APP_PATH="$APP_SRC_DIR/$APP_FILENAME"
+QUADLET_TPL_PATH="$APP_SRC_DIR/containers/container.template"
+QUADLET_PATH="$HOME/.config/containers/systemd/$CONTAINER_NAME.container"
+export CONTAINER_NAME TOKEN DB_FILENAME VOLUME_NAME APP_PATH APP_FILENAME
+envsubst < "$QUADLET_TPL_PATH" > "$QUADLET_PATH"
+systemctl --user daemon-reload
+systemctl --user start "$CONTAINER_NAME"
+
+
+
