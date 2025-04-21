@@ -1,11 +1,5 @@
 #!/bin/bash
 
-
-#NAMESPACE=... # (dev/prod/...)
-#APP_SRC_DIR="$HOME/release/${NAMESPACE}-tg-contest-bot"
-#APP_FILENAME=tgcontestbot
-#VERSION=...
-
 print_help() {
   # Описание переменных
   echo "Используемые переменные:"
