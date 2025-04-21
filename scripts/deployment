@@ -27,7 +27,6 @@ check_variable VERSION
 check_variable TOKEN
 
 #set -o xtrace
-mkdir -p "$APP_SRC_DIR"
 
 set -e
 
