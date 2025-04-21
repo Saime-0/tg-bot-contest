@@ -1,6 +1,8 @@
 #!/bin/bash
 
-for util in podman sqlite3 rsync cpulimit; do
+set -e
+
+for util in podman sqlite3 rsync cpulimit jq goose; do
   command -v "$util" &>/dev/null || { echo "Ошибка: Утилита '$util' не найдена."; exit 1; }
 done
 

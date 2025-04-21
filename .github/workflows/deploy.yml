@@ -20,21 +20,48 @@ jobs:
         with:
           args: --timeout 10m
 
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.24
+
+      - name: Install dependencies
+        run: go mod download && go mod verify
+
+      - name: Build application
+        run: CGO_ENABLED=0 go build -v -o ./bin/app ./cmd/app/main.go
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app
+          path: /bin/tgcontestbot
+
   deploy:
     runs-on: ubuntu-latest
     needs: golangci-lint
     environment: ${{ inputs.environment}}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up SSH config
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: app
+          path: /bin/tgcontestbot
+
+      - name: Setup SSH config
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id
           chmod 600 ~/.ssh/id
           cat <<EOF >> ~/.ssh/config
-          Host Prod
+          Host Server
             HostName ${{ secrets.SSH_HOST }}
             User ${{ secrets.SSH_USERNAME }}
             Port ${{ secrets.SSH_PORT }}
@@ -43,10 +70,20 @@ jobs:
           EOF
           chmod 600 ~/.ssh/config
 
+      - name: Check server utils
+        run: ssh Server "bash -s" < ./scripts/check-utils.sh
+
+      - name: Delivery
+        run: SSH_HOST=Server DIR="~/release/${{ vars.NAMESPACE }}-tg-contest-bot" ./scripts/rsync-project.sh
+
       - name: Deploy
         run: |
-          SSH_HOST=Prod \
-          VERSION=${{ github.ref_name }} \
-          APP_PREFIX=${{ vars.APP_PREFIX }} \
-          TOKEN=${{ secrets.BOT_TOKEN }} \
-          ./scripts/deploy.sh
+          ssh Server "
+            set -e
+            NAMESPACE=${{ vars.NAMESPACE }} \
+            APP_SRC_DIR="~/release/${{ vars.NAMESPACE }}-tg-contest-bot" \
+            APP_FILENAME=tgcontestbot \
+            VERSION=${{ github.ref_name }} \
+            TOKEN=${{ secrets.BOT_TOKEN }} \
+            ~/release/${{ vars.NAMESPACE }}-tg-contest-bot/scripts/deployment.sh
+          " 

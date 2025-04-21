@@ -1,0 +1,21 @@
+[Unit]
+Description=Telegram bot for contests. Version: $VERSION
+
+[Container]
+ContainerName=$CONTAINER_NAME
+Image=alpine:latest
+Environment=TOKEN=$TOKEN
+Environment=MAIN_DATABASE_DSN=/var/lib/$APP_FILENAME/$DB_FILENAME
+Exec=$APP_FILENAME
+PodmanArgs=--cpus 0.4 --memory 256mb
+Volume=$APP_PATH:/usr/local/bin/$APP_FILENAME
+Volume=$VOLUME_NAME.volume:/var/lib/$APP_FILENAME
+LogDriver=journald
+LogOpt=max-size=10mb
+
+[Service]
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

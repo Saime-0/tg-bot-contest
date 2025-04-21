@@ -1,12 +1,8 @@
 #!/bin/sh
 
 rsync --delete -avzrP \
-    --include='cmd/***' \
-    --include='deploy/***' \
-    --include='internal/***' \
+    --include='bin/***' \
     --include='migrations/***' \
     --include='scripts/***' \
-    --include='go.mod' \
-    --include='go.sum' \
     --exclude='*' \
-    . ${SSH_HOST}:${DIR}
+    . "$SSH_HOST:$DIR"
