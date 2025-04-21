@@ -85,5 +85,5 @@ jobs:
             APP_FILENAME=tgcontestbot \
             VERSION=${{ github.ref_name }} \
             TOKEN=${{ secrets.BOT_TOKEN }} \
-            ~/release/${{ vars.NAMESPACE }}-tg-contest-bot/scripts/deployment
+            ~/release/${{ vars.NAMESPACE }}-tg-contest-bot/scripts/deployment.sh
           " 
