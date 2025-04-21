@@ -55,7 +55,7 @@ jobs:
           name: app
           path: /bin/tgcontestbot
 
-      - name: Set up SSH config
+      - name: Setup SSH config
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id
