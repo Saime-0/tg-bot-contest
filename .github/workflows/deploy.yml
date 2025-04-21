@@ -34,13 +34,13 @@ jobs:
         run: go mod download && go mod verify
 
       - name: Build application
-        run: CGO_ENABLED=0 go build -v -o /bin/app ./cmd/app/main.go
+        run: CGO_ENABLED=0 go build -v -o ./bin/app ./cmd/app/main.go
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: app
-          path: /bin/app
+          path: /bin/tgcontestbot
 
   deploy:
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: app
-          path: /bin/app
+          path: /bin/tgcontestbot
 
       - name: Set up SSH config
         run: |
@@ -74,16 +74,16 @@ jobs:
         run: ssh Server "bash -s" < ./scripts/check-utils.sh
 
       - name: Delivery
-        run: SSH_HOST=Server $DIR="~/release/${{ vars.NAMESPACE }}-tg-contest-bot"" ./scripts/rsync-project.sh
+        run: SSH_HOST=Server DIR="~/release/${{ vars.NAMESPACE }}-tg-contest-bot" ./scripts/rsync-project.sh
 
       - name: Deploy
         run: |
-          cat """
+          ssh Server "
             set -e
             NAMESPACE=${{ vars.NAMESPACE }} \
             APP_SRC_DIR="~/release/${{ vars.NAMESPACE }}-tg-contest-bot" \
             APP_FILENAME=tgcontestbot \
             VERSION=${{ github.ref_name }} \
             TOKEN=${{ secrets.BOT_TOKEN }} \
-            ./scripts/deployment
-          """ | ssh Server "bash -s"
+            ~/release/${{ vars.NAMESPACE }}-tg-contest-bot/scripts/deployment
+          " 

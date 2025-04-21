@@ -9,7 +9,7 @@ Environment=MAIN_DATABASE_DSN=/var/lib/$APP_FILENAME/$DB_FILENAME
 Exec=$APP_FILENAME
 PodmanArgs=--cpus 0.4 --memory 256mb
 Volume=$APP_PATH:/usr/local/bin/$APP_FILENAME
-Volume=$VOLUME_NAME:/var/lib/$APP_FILENAME
+Volume=$VOLUME_NAME.volume:/var/lib/$APP_FILENAME
 LogDriver=journald
 LogOpt=max-size=10mb
 
