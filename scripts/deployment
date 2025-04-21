@@ -4,8 +4,11 @@
 #NAMESPACE=... # (dev/prod/...)
 #APP_SRC_DIR="$HOME/release/${NAMESPACE}-tg-contest-bot"
 #APP_FILENAME=tgcontestbot
+#VERSION=...
+mkdir -p "$APP_SRC_DIR"
 
 set -e
+
 
 # Создать quadlet volume из шаблона, если его нет, и запустить службу
 VOLUME_NAME="${NAMESPACE}-tg-contest-bot"
@@ -33,10 +36,10 @@ CONTAINER_NAME="${NAMESPACE}-tg-contest-bot"
 APP_PATH="$APP_SRC_DIR/$APP_FILENAME"
 QUADLET_TPL_PATH="$APP_SRC_DIR/containers/container.template"
 QUADLET_PATH="$HOME/.config/containers/systemd/$CONTAINER_NAME.container"
-export CONTAINER_NAME TOKEN DB_FILENAME VOLUME_NAME APP_PATH APP_FILENAME
+export CONTAINER_NAME TOKEN DB_FILENAME VOLUME_NAME APP_PATH APP_FILENAME VERSION
 envsubst < "$QUADLET_TPL_PATH" > "$QUADLET_PATH"
 systemctl --user daemon-reload
-systemctl --user start "$CONTAINER_NAME"
+systemctl --user restart "$CONTAINER_NAME"
 
 
 

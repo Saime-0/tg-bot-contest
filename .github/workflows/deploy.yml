@@ -34,7 +34,7 @@ jobs:
         run: go mod download && go mod verify
 
       - name: Build application
-        run: CGO_ENABLED=0 go build -v -o /bin/app ./cmd/app/main.go # Укажите путь к вашему main.go
+        run: CGO_ENABLED=0 go build -v -o /bin/app ./cmd/app/main.go
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -83,5 +83,7 @@ jobs:
             NAMESPACE=${{ vars.NAMESPACE }} \
             APP_SRC_DIR="~/release/${{ vars.NAMESPACE }}-tg-contest-bot" \
             APP_FILENAME=tgcontestbot \
+            VERSION=${{ github.ref_name }} \
+            TOKEN=${{ secrets.BOT_TOKEN }} \
             ./scripts/deployment
           """ | ssh Server "bash -s"

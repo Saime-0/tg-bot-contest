@@ -1,3 +1,6 @@
+[Unit]
+Description=Telegram bot for contests. Version: $VERSION
+
 [Container]
 ContainerName=$CONTAINER_NAME
 Image=alpine:latest
