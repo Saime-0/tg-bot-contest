@@ -13,7 +13,6 @@ import (
 
 	"github.com/Saime-0/tg-bot-contest/internal/l10n"
 	"github.com/Saime-0/tg-bot-contest/internal/model"
-	"github.com/Saime-0/tg-bot-contest/internal/tg/middleware"
 	tgModel "github.com/Saime-0/tg-bot-contest/internal/tg/model"
 	usageErrPkg "github.com/Saime-0/tg-bot-contest/internal/tg/usageErr"
 	"github.com/Saime-0/tg-bot-contest/internal/ue"
@@ -30,7 +29,7 @@ type Controller struct {
 	Bot *gotgbot.Bot
 }
 
-type Middlewares []func(func(Request) error) func(Request) error
+type Middleware func(func(Request) error) func(Request) error
 
 func onlyInPrivateChat(fn func(Request) error) func(Request) error {
 	return func(r Request) error {
@@ -66,8 +65,8 @@ func logDebug(fn func(Request) error) func(Request) error {
 }
 
 func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
-	baseChain := middleware.New[Request]().Use(logDebug)
-	privateChain := baseChain.Use(onlyInPrivateChat)
+	baseChain := []Middleware{logDebug}
+	privateChain := []Middleware{logDebug, onlyInPrivateChat}
 
 	handlerGroup := []ext.Handler{
 		c.NewCommand("contestConfigRun", contestConfigRun, privateChain),
@@ -84,17 +83,17 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	return nil
 }
 
-func (c *Controller) NewCommand(com string, f func(Request) error, mws middleware.Middlewares[Request]) handlers.Command {
-	return handlers.NewCommand(com, c.modulation(f, mws))
+func (c *Controller) NewCommand(com string, f func(Request) error, mws []Middleware) handlers.Command {
+	return handlers.NewCommand(com, c.modulation(f, mws...))
 }
-func (c *Controller) NewMyChatMember(f func(Request) error, mws middleware.Middlewares[Request]) handlers.MyChatMember {
-	return handlers.NewMyChatMember(nil, c.modulation(f, mws))
+func (c *Controller) NewMyChatMember(f func(Request) error, mws []Middleware) handlers.MyChatMember {
+	return handlers.NewMyChatMember(nil, c.modulation(f, mws...))
 }
-func (c *Controller) NewMessage(f func(Request) error, mws middleware.Middlewares[Request]) handlers.Message {
-	return handlers.NewMessage(nil, c.modulation(f, mws))
+func (c *Controller) NewMessage(f func(Request) error, mws []Middleware) handlers.Message {
+	return handlers.NewMessage(nil, c.modulation(f, mws...))
 }
-func (c *Controller) NewChatMember(f func(Request) error, mws middleware.Middlewares[Request]) handlers.ChatMember {
-	return handlers.NewChatMember(nil, c.modulation(f, mws))
+func (c *Controller) NewChatMember(f func(Request) error, mws []Middleware) handlers.ChatMember {
+	return handlers.NewChatMember(nil, c.modulation(f, mws...))
 }
 
 func newMyChatMember(r Request) (err error) {
@@ -129,14 +128,14 @@ type Request struct {
 	ctx *ext.Context
 }
 
-func (c *Controller) modulation(fn func(request Request) error, mw middleware.Middlewares[Request]) handlers.Response {
+func (c *Controller) modulation(fn func(request Request) error, mws ...Middleware) handlers.Response {
 	return func(b *gotgbot.Bot, ctx *ext.Context) error {
 		r := Request{DB: c.DB, Bot: b, ctx: ctx}
-		if mw == nil {
-			return fn(r)
-		} else {
-			return mw.Wrap(fn)(r)
+		// Собрать middleware в функцию
+		for _, mw := range mws {
+			fn = mw(fn)
 		}
+		return fn(r)
 	}
 }
 
