@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -17,15 +16,20 @@ import (
 func main() {
 	token := os.Getenv("TOKEN")
 	if token == "" {
-		log.Fatal("TOKEN environment variable is empty")
+		slog.Error("TOKEN environment variable is empty")
+		os.Exit(1)
 	}
 
 	dbDSN := os.Getenv("MAIN_DATABASE_DSN")
 	if dbDSN == "" {
-		log.Fatal("MAIN_DATABASE_DSN environment variable is empty")
+		slog.Error("MAIN_DATABASE_DSN environment variable is empty")
+		os.Exit(1)
 	}
 
-	slog.SetLogLoggerLevel(slog.LevelDebug)
+	debug := os.Getenv("DEBUG")
+	if debug == "true" || debug == "" {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	}
 
 	// Создаем контекст для graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -37,18 +41,20 @@ func main() {
 
 	go func() {
 		<-sigs
-		log.Println("Received shutdown signal, shutting down...")
+		slog.Info("Received shutdown signal, shutting down...")
 		cancel() // Отменяем контекст
 	}()
 
 	db, err := sqlx.Connect("sqlite", dbDSN)
 	if err != nil {
-		log.Fatalln(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 
 	if err = tg.Run(ctx, token, db); err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 
-	log.Println("Application has shut down gracefully.")
+	slog.Info("Application has shut down gracefully")
 }

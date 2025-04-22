@@ -29,24 +29,51 @@ type Controller struct {
 	Bot *gotgbot.Bot
 }
 
-func onlyInPrivateChat(fn func(b *gotgbot.Bot, ctx *ext.Context) error) func(b *gotgbot.Bot, ctx *ext.Context) error {
-	return func(b *gotgbot.Bot, ctx *ext.Context) error {
-		if ctx.EffectiveChat != nil &&
-			ctx.EffectiveChat.Type == gotgbot.ChatTypePrivate {
-			return fn(b, ctx)
-		}
+type Middleware func(func(Request) error) func(Request) error
 
+func onlyInPrivateChat(fn func(Request) error) func(Request) error {
+	return func(r Request) error {
+		if r.ctx.EffectiveChat != nil &&
+			r.ctx.EffectiveChat.Type == gotgbot.ChatTypePrivate {
+			return fn(r)
+		}
 		return nil
 	}
 }
 
+func logDebug(fn func(Request) error) func(Request) error {
+	return func(r Request) error {
+		args := []any{
+			slog.Int64("update_id", r.ctx.UpdateId),
+		}
+		if r.ctx.EffectiveChat != nil {
+			args = append(args, slog.Int64("effective_chat_id", r.ctx.EffectiveChat.Id))
+			args = append(args, slog.String("effective_chat_username", r.ctx.EffectiveChat.Username))
+		}
+		if r.ctx.EffectiveUser != nil {
+			args = append(args, slog.Int64("effective_user_id", r.ctx.EffectiveUser.Id))
+			args = append(args, slog.String("effective_user_username", r.ctx.EffectiveUser.Username))
+		}
+		if r.ctx.EffectiveMessage != nil {
+			args = append(args, slog.Int64("effective_message_id", r.ctx.EffectiveMessage.MessageId))
+		}
+
+		slog.Debug("new update", args...)
+
+		return fn(r)
+	}
+}
+
 func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
+	baseChain := []Middleware{logDebug}
+	privateChain := []Middleware{logDebug, onlyInPrivateChat}
+
 	handlerGroup := []ext.Handler{
-		handlers.NewCommand("contestConfigRun", onlyInPrivateChat(c.modulation(contestConfigRun))),
-		handlers.NewCommand("contestStop", onlyInPrivateChat(c.modulation(contestStopHandler))),
-		handlers.NewMyChatMember(nil, c.modulation(newMyChatMember)),
-		handlers.NewMessage(nil, c.modulation(newMessage)),
-		handlers.NewChatMember(nil, c.modulation(newChatMember)),
+		c.NewCommand("contestConfigRun", contestConfigRun, privateChain),
+		c.NewCommand("contestStop", contestStopHandler, privateChain),
+		c.NewMyChatMember(newMyChatMember, baseChain),
+		c.NewMessage(newMessage, baseChain),
+		c.NewChatMember(newChatMember, baseChain),
 	}
 
 	for _, h := range handlerGroup {
@@ -54,6 +81,19 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	}
 
 	return nil
+}
+
+func (c *Controller) NewCommand(com string, f func(Request) error, mws []Middleware) handlers.Command {
+	return handlers.NewCommand(com, c.modulation(f, mws...))
+}
+func (c *Controller) NewMyChatMember(f func(Request) error, mws []Middleware) handlers.MyChatMember {
+	return handlers.NewMyChatMember(nil, c.modulation(f, mws...))
+}
+func (c *Controller) NewMessage(f func(Request) error, mws []Middleware) handlers.Message {
+	return handlers.NewMessage(nil, c.modulation(f, mws...))
+}
+func (c *Controller) NewChatMember(f func(Request) error, mws []Middleware) handlers.ChatMember {
+	return handlers.NewChatMember(nil, c.modulation(f, mws...))
 }
 
 func newMyChatMember(r Request) (err error) {
@@ -88,13 +128,14 @@ type Request struct {
 	ctx *ext.Context
 }
 
-func (c *Controller) modulation(fn func(request Request) error) func(b *gotgbot.Bot, ctx *ext.Context) error {
+func (c *Controller) modulation(fn func(request Request) error, mws ...Middleware) handlers.Response {
 	return func(b *gotgbot.Bot, ctx *ext.Context) error {
-		return fn(Request{
-			DB:  c.DB,
-			Bot: b,
-			ctx: ctx,
-		})
+		r := Request{DB: c.DB, Bot: b, ctx: ctx}
+		// Собрать middleware в функцию
+		for _, mw := range mws {
+			fn = mw(fn)
+		}
+		return fn(r)
 	}
 }
 
