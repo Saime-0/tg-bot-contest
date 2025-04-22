@@ -58,6 +58,9 @@ jobs:
           name: app
           path: ./bin
 
+      - name: Make executable
+        run: chmod +x ./bin/tgcontestbot
+
       - name: Setup SSH config
         run: |
           mkdir -p ~/.ssh
