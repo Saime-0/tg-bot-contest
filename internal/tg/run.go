@@ -3,7 +3,7 @@ package tg
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/jmoiron/sqlx"
@@ -44,7 +44,7 @@ func Run(ctx context.Context, token string, db *sqlx.DB) (err error) {
 	case <-ctx.Done():
 		cancel()
 		if err = client.Updater.Stop(); err != nil {
-			log.Println("WARNING", err.Error())
+			slog.Warn(err.Error())
 		}
 		return nil
 	case <-updaterCtx.Done():
