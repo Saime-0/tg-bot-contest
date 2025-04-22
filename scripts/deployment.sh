@@ -30,12 +30,14 @@ check_variable TOKEN
 
 set -e
 
+QUADLETS_DIR=$HOME/.config/containers/systemd
+mkdir -p "$QUADLETS_DIR"
 
 # Создать quadlet volume из шаблона, если его нет, и запустить службу
 VOLUME_NAME="${NAMESPACE}-tg-contest-bot"
 if ! podman volume exists "$VOLUME_NAME"; then
   QUADLET_TPL_PATH="$APP_SRC_DIR/scripts/quadlet/volume.template"
-  QUADLET_PATH="$HOME/.config/containers/systemd/$VOLUME_NAME.volume"
+  QUADLET_PATH="$QUADLETS_DIR/$VOLUME_NAME.volume"
   cp "$QUADLET_TPL_PATH" "$QUADLET_PATH" #  envsubst < $QUADLET_TPL_PATH > "$QUADLET_PATH"
   systemctl --user daemon-reload
   systemctl --user start "$VOLUME_NAME-volume"
@@ -56,7 +58,7 @@ fi
 CONTAINER_NAME="${NAMESPACE}-tg-contest-bot"
 APP_PATH="$APP_SRC_DIR/bin/$APP_FILENAME"
 QUADLET_TPL_PATH="$APP_SRC_DIR/scripts/quadlet/container.template"
-QUADLET_PATH="$HOME/.config/containers/systemd/$CONTAINER_NAME.container"
+QUADLET_PATH="$QUADLETS_DIR/$CONTAINER_NAME.container"
 export CONTAINER_NAME TOKEN DB_FILENAME VOLUME_NAME APP_PATH APP_FILENAME VERSION
 envsubst < "$QUADLET_TPL_PATH" > "$QUADLET_PATH"
 systemctl --user daemon-reload
