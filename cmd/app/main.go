@@ -25,8 +25,10 @@ func main() {
 		slog.Error("MAIN_DATABASE_DSN environment variable is empty")
 		os.Exit(1)
 	}
-
-	slog.SetLogLoggerLevel(slog.LevelDebug)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+	slog.SetDefault(logger)
 
 	// Создаем контекст для graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
