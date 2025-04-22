@@ -25,7 +25,7 @@ func main() {
 		slog.Error("MAIN_DATABASE_DSN environment variable is empty")
 		os.Exit(1)
 	}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
 	slog.SetDefault(logger)
