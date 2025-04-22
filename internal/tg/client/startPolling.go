@@ -28,7 +28,7 @@ func StartPolling(updater *ext.Updater, bot *gotgbot.Bot) error {
 		return fmt.Errorf("failed to start polling: %w", err)
 	}
 
-	slog.Info("%s has been started...\n", bot.Username)
+	slog.Info(bot.Username + " has been started...")
 
 	return nil
 }
