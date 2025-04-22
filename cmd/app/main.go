@@ -41,7 +41,7 @@ func main() {
 
 	go func() {
 		<-sigs
-		slog.Info("Получен сигнал выключения, завершаю работу...")
+		slog.Info("Received shutdown signal, shutting down...")
 		cancel() // Отменяем контекст
 	}()
 
@@ -56,5 +56,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("Приложение корректно завершило работу")
+	slog.Info("Application has shut down gracefully")
 }
