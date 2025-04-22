@@ -13,6 +13,7 @@ import (
 
 	"github.com/Saime-0/tg-bot-contest/internal/l10n"
 	"github.com/Saime-0/tg-bot-contest/internal/model"
+	"github.com/Saime-0/tg-bot-contest/internal/tg/middleware"
 	tgModel "github.com/Saime-0/tg-bot-contest/internal/tg/model"
 	usageErrPkg "github.com/Saime-0/tg-bot-contest/internal/tg/usageErr"
 	"github.com/Saime-0/tg-bot-contest/internal/ue"
@@ -29,47 +30,51 @@ type Controller struct {
 	Bot *gotgbot.Bot
 }
 
-func onlyInPrivateChat(fn func(b *gotgbot.Bot, ctx *ext.Context) error) func(b *gotgbot.Bot, ctx *ext.Context) error {
-	return func(b *gotgbot.Bot, ctx *ext.Context) error {
-		if ctx.EffectiveChat != nil &&
-			ctx.EffectiveChat.Type == gotgbot.ChatTypePrivate {
-			return fn(b, ctx)
-		}
+type Middlewares []func(func(Request) error) func(Request) error
 
+func onlyInPrivateChat(fn func(Request) error) func(Request) error {
+	return func(r Request) error {
+		if r.ctx.EffectiveChat != nil &&
+			r.ctx.EffectiveChat.Type == gotgbot.ChatTypePrivate {
+			return fn(r)
+		}
 		return nil
 	}
 }
 
-func logDebug(fn func(b *gotgbot.Bot, ctx *ext.Context) error) func(b *gotgbot.Bot, ctx *ext.Context) error {
-	return func(b *gotgbot.Bot, ctx *ext.Context) error {
+func logDebug(fn func(Request) error) func(Request) error {
+	return func(r Request) error {
 		args := []any{
-			slog.Int64("update_id", ctx.UpdateId),
+			slog.Int64("update_id", r.ctx.UpdateId),
 		}
-		if ctx.EffectiveChat != nil {
-			args = append(args, slog.Int64("effective_chat_id", ctx.EffectiveChat.Id))
-			args = append(args, slog.String("effective_chat_username", ctx.EffectiveChat.Username))
+		if r.ctx.EffectiveChat != nil {
+			args = append(args, slog.Int64("effective_chat_id", r.ctx.EffectiveChat.Id))
+			args = append(args, slog.String("effective_chat_username", r.ctx.EffectiveChat.Username))
 		}
-		if ctx.EffectiveUser != nil {
-			args = append(args, slog.Int64("effective_user_id", ctx.EffectiveUser.Id))
-			args = append(args, slog.String("effective_user_username", ctx.EffectiveUser.Username))
+		if r.ctx.EffectiveUser != nil {
+			args = append(args, slog.Int64("effective_user_id", r.ctx.EffectiveUser.Id))
+			args = append(args, slog.String("effective_user_username", r.ctx.EffectiveUser.Username))
 		}
-		if ctx.EffectiveMessage != nil {
-			args = append(args, slog.Int64("effective_message_id", ctx.EffectiveMessage.MessageId))
+		if r.ctx.EffectiveMessage != nil {
+			args = append(args, slog.Int64("effective_message_id", r.ctx.EffectiveMessage.MessageId))
 		}
 
 		slog.Debug("new update", args...)
 
-		return fn(b, ctx)
+		return fn(r)
 	}
 }
 
 func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
+	baseChain := middleware.New[Request]().Use(logDebug)
+	privateChain := baseChain.Use(onlyInPrivateChat)
+
 	handlerGroup := []ext.Handler{
-		handlers.NewCommand("contestConfigRun", logDebug(onlyInPrivateChat(c.modulation(contestConfigRun)))),
-		handlers.NewCommand("contestStop", logDebug(onlyInPrivateChat(c.modulation(contestStopHandler)))),
-		handlers.NewMyChatMember(nil, logDebug(c.modulation(newMyChatMember))),
-		handlers.NewMessage(nil, logDebug(c.modulation(newMessage))),
-		handlers.NewChatMember(nil, logDebug(c.modulation(newChatMember))),
+		c.NewCommand("contestConfigRun", contestConfigRun, privateChain),
+		c.NewCommand("contestStop", contestStopHandler, privateChain),
+		c.NewMyChatMember(newMyChatMember, baseChain),
+		c.NewMessage(newMessage, baseChain),
+		c.NewChatMember(newChatMember, baseChain),
 	}
 
 	for _, h := range handlerGroup {
@@ -77,6 +82,19 @@ func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	}
 
 	return nil
+}
+
+func (c *Controller) NewCommand(com string, f func(Request) error, mws middleware.Middlewares[Request]) handlers.Command {
+	return handlers.NewCommand(com, c.modulation(f, mws))
+}
+func (c *Controller) NewMyChatMember(f func(Request) error, mws middleware.Middlewares[Request]) handlers.MyChatMember {
+	return handlers.NewMyChatMember(nil, c.modulation(f, mws))
+}
+func (c *Controller) NewMessage(f func(Request) error, mws middleware.Middlewares[Request]) handlers.Message {
+	return handlers.NewMessage(nil, c.modulation(f, mws))
+}
+func (c *Controller) NewChatMember(f func(Request) error, mws middleware.Middlewares[Request]) handlers.ChatMember {
+	return handlers.NewChatMember(nil, c.modulation(f, mws))
 }
 
 func newMyChatMember(r Request) (err error) {
@@ -111,13 +129,14 @@ type Request struct {
 	ctx *ext.Context
 }
 
-func (c *Controller) modulation(fn func(request Request) error) func(b *gotgbot.Bot, ctx *ext.Context) error {
+func (c *Controller) modulation(fn func(request Request) error, mw middleware.Middlewares[Request]) handlers.Response {
 	return func(b *gotgbot.Bot, ctx *ext.Context) error {
-		return fn(Request{
-			DB:  c.DB,
-			Bot: b,
-			ctx: ctx,
-		})
+		r := Request{DB: c.DB, Bot: b, ctx: ctx}
+		if mw == nil {
+			return fn(r)
+		} else {
+			return mw.Wrap(fn)(r)
+		}
 	}
 }
 
