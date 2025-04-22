@@ -15,7 +15,7 @@ import (
 func Run(ctx context.Context, token string, db *sqlx.DB) (err error) {
 	client := &tgClient.Client{}
 	if client.Bot, err = tgClient.NewBot(token); err != nil {
-		return fmt.Errorf("can't create bot: %w", err)
+		return fmt.Errorf("tgClient.NewBot: %w", err)
 	}
 
 	updatesController := &tgUpdatesController.Controller{
@@ -25,13 +25,13 @@ func Run(ctx context.Context, token string, db *sqlx.DB) (err error) {
 
 	client.Dispatcher = tgClient.NewDispatcher()
 	if err = updatesController.AddHandlers(client.Dispatcher); err != nil {
-		return fmt.Errorf("can't register updatesController: %w", err)
+		return fmt.Errorf("updatesController.AddHandlers: %w", err)
 	}
 
 	client.Updater = ext.NewUpdater(client.Dispatcher, nil)
 
 	if err = tgClient.StartPolling(client.Updater, client.Bot); err != nil {
-		return err
+		return fmt.Errorf("tgClient.StartPolling: %w", err)
 	}
 
 	updaterCtx, cancel := context.WithCancel(context.Background())
@@ -44,7 +44,7 @@ func Run(ctx context.Context, token string, db *sqlx.DB) (err error) {
 	case <-ctx.Done():
 		cancel()
 		if err = client.Updater.Stop(); err != nil {
-			slog.Warn(err.Error())
+			slog.Warn("client.Updater.Stop: " + err.Error())
 		}
 		return nil
 	case <-updaterCtx.Done():

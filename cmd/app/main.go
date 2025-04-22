@@ -25,10 +25,11 @@ func main() {
 		slog.Error("MAIN_DATABASE_DSN environment variable is empty")
 		os.Exit(1)
 	}
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
-	slog.SetDefault(logger)
+
+	debug := os.Getenv("DEBUG")
+	if debug == "true" || debug == "" {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	}
 
 	// Создаем контекст для graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -40,7 +41,7 @@ func main() {
 
 	go func() {
 		<-sigs
-		slog.Info("Received shutdown signal, shutting down...")
+		slog.Info("Получен сигнал выключения, завершаю работу...")
 		cancel() // Отменяем контекст
 	}()
 
@@ -55,5 +56,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("Application has shut down gracefully.")
+	slog.Info("Приложение корректно завершило работу")
 }
