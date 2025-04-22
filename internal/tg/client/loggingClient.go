@@ -19,7 +19,7 @@ type loggingClient struct {
 // Он пересылает запрос базовому BotClient и регистрирует ответ.
 func (b loggingClient) RequestWithContext(ctx context.Context, token string, method string, params map[string]string, data map[string]gotgbot.FileReader, opts *gotgbot.RequestOpts) (json.RawMessage, error) {
 	rm, err := b.BotClient.RequestWithContext(ctx, token, method, params, data, opts)
-	b1, _ := json.MarshalIndent(rm, "", "")
+	b1, _ := json.Marshal(rm)
 	if string(b1) != ("[]") {
 		slog.Debug(string(b1))
 	}
