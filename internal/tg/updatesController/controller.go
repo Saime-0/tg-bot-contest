@@ -40,13 +40,36 @@ func onlyInPrivateChat(fn func(b *gotgbot.Bot, ctx *ext.Context) error) func(b *
 	}
 }
 
+func logDebug(fn func(b *gotgbot.Bot, ctx *ext.Context) error) func(b *gotgbot.Bot, ctx *ext.Context) error {
+	return func(b *gotgbot.Bot, ctx *ext.Context) error {
+		args := []any{
+			slog.Int64("update_id", ctx.UpdateId),
+		}
+		if ctx.EffectiveChat != nil {
+			args = append(args, slog.Int64("effective_chat_id", ctx.EffectiveChat.Id))
+			args = append(args, slog.String("effective_chat_username", ctx.EffectiveChat.Username))
+		}
+		if ctx.EffectiveUser != nil {
+			args = append(args, slog.Int64("effective_user_id", ctx.EffectiveUser.Id))
+			args = append(args, slog.String("effective_user_username", ctx.EffectiveUser.Username))
+		}
+		if ctx.EffectiveMessage != nil {
+			args = append(args, slog.Int64("effective_message_id", ctx.EffectiveMessage.MessageId))
+		}
+
+		slog.Debug("new update", args...)
+
+		return fn(b, ctx)
+	}
+}
+
 func (c *Controller) AddHandlers(dispatcher *ext.Dispatcher) error {
 	handlerGroup := []ext.Handler{
-		handlers.NewCommand("contestConfigRun", onlyInPrivateChat(c.modulation(contestConfigRun))),
-		handlers.NewCommand("contestStop", onlyInPrivateChat(c.modulation(contestStopHandler))),
-		handlers.NewMyChatMember(nil, c.modulation(newMyChatMember)),
-		handlers.NewMessage(nil, c.modulation(newMessage)),
-		handlers.NewChatMember(nil, c.modulation(newChatMember)),
+		handlers.NewCommand("contestConfigRun", logDebug(onlyInPrivateChat(c.modulation(contestConfigRun)))),
+		handlers.NewCommand("contestStop", logDebug(onlyInPrivateChat(c.modulation(contestStopHandler)))),
+		handlers.NewMyChatMember(nil, logDebug(c.modulation(newMyChatMember))),
+		handlers.NewMessage(nil, logDebug(c.modulation(newMessage))),
+		handlers.NewChatMember(nil, logDebug(c.modulation(newChatMember))),
 	}
 
 	for _, h := range handlerGroup {

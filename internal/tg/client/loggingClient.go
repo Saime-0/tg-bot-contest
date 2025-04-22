@@ -9,10 +9,14 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 )
 
+// loggingClient это обертка для стандартного BotClient, которая добавляет функциональность ведения журнала.
+// Он регистрирует ответы на вызовы Telegram API для целей отладки.
 type loggingClient struct {
-	gotgbot.BotClient
+	gotgbot.BotClient // Embedded interface for delegation
 }
 
+// RequestWithContext переопределяет стандартный метод RequestWithContext, чтобы добавить ведение журнала.
+// Он пересылает запрос базовому BotClient и регистрирует ответ.
 func (b loggingClient) RequestWithContext(ctx context.Context, token string, method string, params map[string]string, data map[string]gotgbot.FileReader, opts *gotgbot.RequestOpts) (json.RawMessage, error) {
 	rm, err := b.BotClient.RequestWithContext(ctx, token, method, params, data, opts)
 	b1, _ := json.MarshalIndent(rm, "", "")
@@ -22,6 +26,8 @@ func (b loggingClient) RequestWithContext(ctx context.Context, token string, met
 	return rm, err
 }
 
+// newLoggingClient создает новый экземпляр клиента ведения журнала.
+// Он инициализирует клиент с настройками по умолчанию и добавляет в него функциональность ведения журнала.
 func newLoggingClient() loggingClient {
 	return loggingClient{
 		BotClient: &gotgbot.BaseBotClient{
